@@ -86,7 +86,7 @@ export default function Home() {
         <div style={{ position: "relative", textAlign: "center", padding: "48px 32px", display: "flex", alignItems: "center", gap: 32, justifyContent: "center" }}>
           {/* Trophy */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/images/trophy.avif" alt="World Cup Trophy" style={{ height: 140, objectFit: "contain", filter: "drop-shadow(0 0 20px rgba(201,168,76,0.5))", flexShrink: 0 }} />
+          <img src="/images/trophy.webp" alt="World Cup Trophy" style={{ height: 160, objectFit: "contain", filter: "drop-shadow(0 0 24px rgba(201,168,76,0.6))", flexShrink: 0 }} />
 
           <div>
             <div className="font-display" style={{ fontSize: 13, color: "var(--gold)", letterSpacing: 4, marginBottom: 8 }}>
