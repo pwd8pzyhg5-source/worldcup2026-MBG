@@ -69,7 +69,7 @@ export default function Home() {
         <h1 className="font-display" style={{ fontSize: 56, color: "var(--white)", lineHeight: 1.1, marginBottom: 8 }}>
           BIG DOGS BARK
         </h1>
-        <p style={{ color: "var(--muted)", fontSize: 15 }}>Jordan · Sean · Jamie · Matt · Rob</p>
+        <p style={{ color: "var(--muted)", fontSize: 15 }}>Gordo · Shun · Dr. Rick · Sexy Tecsy · Lazy Bones</p>
       </div>
 
       {/* Live ticker */}

@@ -20,7 +20,7 @@ export function writeDraft(state: DraftState): void {
   fs.writeFileSync(DRAFT_PATH, JSON.stringify(state, null, 2));
 }
 
-const PARTICIPANTS = ["Jordan", "Sean", "Jamie", "Matt", "Rob"];
+const PARTICIPANTS = ["Gordo", "Shun", "Dr. Rick", "Sexy Tecsy", "Lazy Bones"];
 
 export function buildSnakeOrder(participants: string[]): string[] {
   const order: string[] = [];

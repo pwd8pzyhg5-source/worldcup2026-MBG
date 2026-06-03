@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
-const PARTICIPANTS = ["Jordan", "Sean", "Jamie", "Matt", "Rob"];
+const PARTICIPANTS = ["Gordo", "Shun", "Dr. Rick", "Sexy Tecsy", "Lazy Bones"];
 
 const COLORS: Record<string, string> = {
   Jordan: "#3b82f6",
