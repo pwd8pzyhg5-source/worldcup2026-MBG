@@ -90,10 +90,10 @@ export default function Home() {
 
           <div>
             <div className="font-display" style={{ fontSize: 13, color: "var(--gold)", letterSpacing: 4, marginBottom: 8 }}>
-              FIFA WORLD CUP 2026 · MBG LEAGUE
+              FIFA WORLD CUP 2026
             </div>
             <h1 className="font-display" style={{ fontSize: 64, color: "var(--white)", lineHeight: 1, marginBottom: 10 }}>
-              BIG DOGS BARK
+              MBG TOURNAMENT
             </h1>
             <p style={{ color: "rgba(240,244,255,0.7)", fontSize: 15 }}>Gordo · Shun · Dr. Rick · Sexy Tecsy · Lazy Bones</p>
           </div>
