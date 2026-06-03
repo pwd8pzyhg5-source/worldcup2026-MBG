@@ -56,8 +56,16 @@ export default function BracketPage() {
 
   return (
     <div style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 16px" }}>
-      <h1 className="font-display" style={{ fontSize: 36, color: "var(--gold)", marginBottom: 8 }}>GROUP STAGE</h1>
-      <p style={{ color: "var(--muted)", fontSize: 14, marginBottom: 24 }}>Team colours indicate which participant owns them.</p>
+      {/* Banner */}
+      <div style={{ position: "relative", borderRadius: 12, overflow: "hidden", marginBottom: 24, height: 140 }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/images/wc-ball.webp" alt="World Cup Ball" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 60%" }} />
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(90deg, rgba(10,14,26,0.9) 0%, rgba(10,14,26,0.4) 100%)" }} />
+        <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 28px" }}>
+          <h1 className="font-display" style={{ fontSize: 36, color: "var(--gold)" }}>GROUP STAGE</h1>
+          <p style={{ color: "rgba(240,244,255,0.7)", fontSize: 13 }}>Team colours indicate which participant owns them.</p>
+        </div>
+      </div>
 
       {loading ? (
         <div style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>Loading...</div>

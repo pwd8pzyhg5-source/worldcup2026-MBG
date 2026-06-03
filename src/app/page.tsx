@@ -62,14 +62,42 @@ export default function Home() {
   return (
     <div style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 16px" }}>
       {/* Hero */}
-      <div className="hero-bg" style={{ borderRadius: 12, padding: "40px 32px", marginBottom: 32, textAlign: "center" }}>
-        <div className="font-display" style={{ fontSize: 13, color: "var(--gold)", letterSpacing: 4, marginBottom: 8 }}>
-          FIFA WORLD CUP 2026 · MBG LEAGUE
+      <div style={{
+        position: "relative",
+        borderRadius: 12,
+        marginBottom: 32,
+        overflow: "hidden",
+        minHeight: 280,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}>
+        {/* Background stadium image */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/images/bc-place.jpg"
+          alt="BC Place"
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 40%" }}
+        />
+        {/* Dark overlay */}
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(10,14,26,0.55) 0%, rgba(10,14,26,0.85) 100%)" }} />
+
+        {/* Content */}
+        <div style={{ position: "relative", textAlign: "center", padding: "48px 32px", display: "flex", alignItems: "center", gap: 32, justifyContent: "center" }}>
+          {/* Trophy */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/images/trophy.avif" alt="World Cup Trophy" style={{ height: 140, objectFit: "contain", filter: "drop-shadow(0 0 20px rgba(201,168,76,0.5))", flexShrink: 0 }} />
+
+          <div>
+            <div className="font-display" style={{ fontSize: 13, color: "var(--gold)", letterSpacing: 4, marginBottom: 8 }}>
+              FIFA WORLD CUP 2026 · MBG LEAGUE
+            </div>
+            <h1 className="font-display" style={{ fontSize: 64, color: "var(--white)", lineHeight: 1, marginBottom: 10 }}>
+              BIG DOGS BARK
+            </h1>
+            <p style={{ color: "rgba(240,244,255,0.7)", fontSize: 15 }}>Gordo · Shun · Dr. Rick · Sexy Tecsy · Lazy Bones</p>
+          </div>
         </div>
-        <h1 className="font-display" style={{ fontSize: 56, color: "var(--white)", lineHeight: 1.1, marginBottom: 8 }}>
-          BIG DOGS BARK
-        </h1>
-        <p style={{ color: "var(--muted)", fontSize: 15 }}>Gordo · Shun · Dr. Rick · Sexy Tecsy · Lazy Bones</p>
       </div>
 
       {/* Live ticker */}
