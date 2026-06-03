@@ -64,10 +64,10 @@ export default function Home() {
       {/* Hero */}
       <div className="hero-bg" style={{ borderRadius: 12, padding: "40px 32px", marginBottom: 32, textAlign: "center" }}>
         <div className="font-display" style={{ fontSize: 13, color: "var(--gold)", letterSpacing: 4, marginBottom: 8 }}>
-          FIFA WORLD CUP 2026 · FANTASY LEAGUE
+          FIFA WORLD CUP 2026 · MBG LEAGUE
         </div>
         <h1 className="font-display" style={{ fontSize: 56, color: "var(--white)", lineHeight: 1.1, marginBottom: 8 }}>
-          THE CHAMPIONSHIP
+          BIG DOGS BARK
         </h1>
         <p style={{ color: "var(--muted)", fontSize: 15 }}>Jordan · Sean · Jamie · Matt · Rob</p>
       </div>
