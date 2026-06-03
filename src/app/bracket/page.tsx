@@ -57,9 +57,9 @@ export default function BracketPage() {
   return (
     <div style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 16px" }}>
       {/* Banner */}
-      <div style={{ position: "relative", borderRadius: 12, overflow: "hidden", marginBottom: 24, height: 180 }}>
+      <div style={{ position: "relative", borderRadius: 12, overflow: "hidden", marginBottom: 24, height: 160 }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/images/wc-ball.webp" alt="World Cup Ball" style={{ position: "absolute", width: "160%", height: "160%", top: "-30%", left: "-30%", objectFit: "contain" }} />
+        <img src="/images/wc-ball-vancouver.png" alt="World Cup Ball Vancouver" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 40%" }} />
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(90deg, rgba(10,14,26,0.9) 0%, rgba(10,14,26,0.4) 100%)" }} />
         <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 28px" }}>
           <h1 className="font-display" style={{ fontSize: 36, color: "var(--gold)" }}>GROUP STAGE</h1>
