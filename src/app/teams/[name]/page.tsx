@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import Flag from "@/components/Flag";
 import { TEAM_BY_ID } from "../../../../data/teams";
 
-const PARTICIPANTS = ["Gordo", "Shun", "Dr. Rick", "Sexy Tecsy", "Lazy Bones"];
+const PARTICIPANTS = ["Gordo", "Shun", "Dr. Rick", "Sexy Tecsy", "Lazy Bones", "Bradical Bray Bray"];
 
 const COLORS: Record<string, string> = {
   Jordan: "#3b82f6",

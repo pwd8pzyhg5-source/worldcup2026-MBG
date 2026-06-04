@@ -24,9 +24,10 @@ const PARTICIPANT_COLORS: Record<string, string> = {
   "Dr. Rick": "#f59e0b",
   "Sexy Tecsy": "#ec4899",
   "Lazy Bones": "#8b5cf6",
+  "Bradical Bray Bray": "#f97316",
 };
 
-const RANK_LABELS = ["🥇", "🥈", "🥉", "4th", "5th"];
+const RANK_LABELS = ["🥇", "🥈", "🥉", "4th", "5th", "6th"];
 
 export default function Home() {
   const [standings, setStandings] = useState<ParticipantStanding[]>([]);
@@ -101,7 +102,7 @@ export default function Home() {
                 MBG TOURNAMENT
               </h1>
               <p style={{ color: "rgba(240,244,255,0.65)", fontSize: 12 }}>
-                Gordo · Shun · Dr. Rick · Sexy Tecsy · Lazy Bones
+                Gordo · Shun · Dr. Rick · Sexy Tecsy · Lazy Bones · Bradical Bray Bray
               </p>
             </div>
           </div>
