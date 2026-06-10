@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Flag from "@/components/Flag";
 import { TEAMS, TEAM_BY_ID } from "../../../data/teams";
+import { FIFA_RANKINGS_BY_ID } from "@/lib/fifaRankings";
 
 interface DraftState {
   completed: boolean;
@@ -280,7 +281,9 @@ function DraftInner() {
                             <Flag code={team.code} size={24} />
                             <span className="font-condensed" style={{ color: "var(--white)", fontWeight: 600, fontSize: 15, flex: 1 }}>{team.name}</span>
                             <span style={{ fontSize: 11, color: "var(--muted)" }}>Group {team.group}</span>
-                            <span style={{ fontSize: 11, color, fontWeight: 700, minWidth: 32, textAlign: "right" }}>#{pick.pickNumber}</span>
+                            <span style={{ fontSize: 11, color: "var(--muted)", whiteSpace: "nowrap" }}>
+                              {FIFA_RANKINGS_BY_ID[pick.teamId] ? `FIFA #${FIFA_RANKINGS_BY_ID[pick.teamId]}` : "NR"}
+                            </span>
                           </div>
                         );
                       })}
