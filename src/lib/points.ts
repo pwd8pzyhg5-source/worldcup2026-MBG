@@ -54,10 +54,10 @@ const POINTS = {
   round32: 2,
   round16: 4,
   quarterFinal: 6,
-  semiFinal: 8,
+  semiFinal: 7,
   bronze: 10,
-  runnerUp: 14,
-  champion: 20,
+  runnerUp: 11,
+  champion: 15,
   redCard: -2,
   yellowCardPair: -1,
 };
