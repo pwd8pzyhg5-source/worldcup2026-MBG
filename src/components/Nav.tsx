@@ -5,10 +5,9 @@ import { usePathname } from "next/navigation";
 
 const links = [
   { href: "/", label: "Leaderboard", short: "Board" },
-  { href: "/teams", label: "Teams", short: "Teams" },
+  { href: "/draft", label: "Draft", short: "Draft" },
   { href: "/bracket", label: "Bracket", short: "Groups" },
   { href: "/stats", label: "Stats", short: "Stats" },
-  { href: "/draft", label: "Draft Room", short: "Draft" },
 ];
 
 export default function Nav() {

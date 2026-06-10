@@ -14,11 +14,12 @@ interface StandingEntry {
 }
 
 const PARTICIPANT_COLORS: Record<string, string> = {
-  Jordan: "#3b82f6",
-  Sean: "#10b981",
-  Jamie: "#f59e0b",
-  Matt: "#ec4899",
-  Rob: "#8b5cf6",
+  Gordo: "#3b82f6",
+  Shun: "#10b981",
+  "Dr. Rick": "#f59e0b",
+  "Sexy Tecsy": "#ec4899",
+  "Lazy Bones": "#8b5cf6",
+  "Bradical Bray Bray": "#f97316",
 };
 
 export default function BracketPage() {
