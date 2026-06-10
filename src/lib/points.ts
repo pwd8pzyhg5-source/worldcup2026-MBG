@@ -1,4 +1,5 @@
 import { TEAM_BY_ID } from "../../data/teams";
+import { isTopTen, isUpsetEligible } from "./fifaRankings";
 
 export interface MatchResult {
   fixtureId: number;
@@ -22,6 +23,8 @@ export interface TeamPoints {
     groupDraws: number;
     cleanSheets: number;
     goalsScored: number;
+    upsetWins: number;
+    upsetDraws: number;
     advancedRound32: number;
     advancedRound16: number;
     advancedQF: number;
@@ -46,6 +49,8 @@ const POINTS = {
   groupDraw: 1,
   cleanSheet: 2,
   goal: 1,
+  upsetWin: 3,
+  upsetDraw: 1,
   round32: 2,
   round16: 4,
   quarterFinal: 6,
@@ -67,6 +72,8 @@ export function calculateTeamPoints(
     groupDraws: 0,
     cleanSheets: 0,
     goalsScored: 0,
+    upsetWins: 0,
+    upsetDraws: 0,
     advancedRound32: 0,
     advancedRound16: 0,
     advancedQF: 0,
@@ -105,6 +112,13 @@ export function calculateTeamPoints(
       else if (myGoals === theirGoals) breakdown.groupDraws += 1;
     }
 
+    // Upset bonus: team ranked 30+ beats or draws a top-10 team
+    const opponentId = isHome ? match.awayTeamId : match.homeTeamId;
+    if (isUpsetEligible(teamId) && isTopTen(opponentId)) {
+      if (myGoals > theirGoals) breakdown.upsetWins += 1;
+      else if (myGoals === theirGoals) breakdown.upsetDraws += 1;
+    }
+
     // Cards
     breakdown.redCardPenalty += myRedCards;
     totalYellows += myYellowCards;
@@ -128,6 +142,8 @@ export function calculateTeamPoints(
     breakdown.groupDraws * POINTS.groupDraw +
     breakdown.cleanSheets * POINTS.cleanSheet +
     breakdown.goalsScored * POINTS.goal +
+    breakdown.upsetWins * POINTS.upsetWin +
+    breakdown.upsetDraws * POINTS.upsetDraw +
     breakdown.advancedRound32 * POINTS.round32 +
     breakdown.advancedRound16 * POINTS.round16 +
     breakdown.advancedQF * POINTS.quarterFinal +

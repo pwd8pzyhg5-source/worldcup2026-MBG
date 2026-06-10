@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Flag from "@/components/Flag";
+import { TEAM_BY_ID } from "../../../data/teams";
 
 interface TopScorer {
   player: { id: number; name: string; nationality: string; photo: string };
@@ -19,20 +20,78 @@ interface CleanSheetEntry {
   count: number;
 }
 
-type Tab = "goals" | "assists" | "cleansheets";
+interface TeamPoints {
+  teamId: string;
+  total: number;
+  breakdown: {
+    upsetWins: number;
+    upsetDraws: number;
+    [key: string]: number;
+  };
+}
+
+interface ParticipantStanding {
+  name: string;
+  teams: string[];
+  totalPoints: number;
+  teamPoints: TeamPoints[];
+}
+
+interface UpsetEntry {
+  teamId: string;
+  participant: string;
+  upsetWins: number;
+  upsetDraws: number;
+  bonusPoints: number;
+}
+
+type Tab = "goals" | "assists" | "cleansheets" | "upsets";
+
+const PARTICIPANT_COLORS: Record<string, string> = {
+  Gordo: "#3b82f6",
+  Shun: "#10b981",
+  "Dr. Rick": "#f59e0b",
+  "Sexy Tecsy": "#ec4899",
+  "Lazy Bones": "#8b5cf6",
+  "Bradical Bray Bray": "#f97316",
+};
 
 export default function StatsPage() {
   const [scorers, setScorers] = useState<TopScorer[]>([]);
   const [cleanSheets, setCleanSheets] = useState<CleanSheetEntry[]>([]);
+  const [upsets, setUpsets] = useState<UpsetEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("goals");
 
   useEffect(() => {
-    fetch("/api/topscorers").then((r) => r.json()).then((d) => {
-      setScorers(d.scorers || []);
-      setCleanSheets(d.cleanSheets || []);
-      setLastUpdated(d.lastUpdated);
+    Promise.all([
+      fetch("/api/topscorers").then((r) => r.json()),
+      fetch("/api/points").then((r) => r.json()),
+    ]).then(([scorerData, pointsData]) => {
+      setScorers(scorerData.scorers || []);
+      setCleanSheets(scorerData.cleanSheets || []);
+      setLastUpdated(scorerData.lastUpdated);
+
+      // Build upset leaderboard from points breakdown
+      const upsetsMap: UpsetEntry[] = [];
+      for (const standing of (pointsData.standings || []) as ParticipantStanding[]) {
+        for (const tp of standing.teamPoints) {
+          const wins = tp.breakdown.upsetWins ?? 0;
+          const draws = tp.breakdown.upsetDraws ?? 0;
+          if (wins > 0 || draws > 0) {
+            upsetsMap.push({
+              teamId: tp.teamId,
+              participant: standing.name,
+              upsetWins: wins,
+              upsetDraws: draws,
+              bonusPoints: wins * 3 + draws * 1,
+            });
+          }
+        }
+      }
+      upsetsMap.sort((a, b) => b.bonusPoints - a.bonusPoints);
+      setUpsets(upsetsMap);
       setLoading(false);
     });
   }, []);
@@ -47,6 +106,7 @@ export default function StatsPage() {
     { key: "goals", label: "Golden Boot", emoji: "⚽" },
     { key: "assists", label: "Assist Leaders", emoji: "🎯" },
     { key: "cleansheets", label: "Clean Sheets", emoji: "🧤" },
+    { key: "upsets", label: "Upsets", emoji: "🔥" },
   ];
 
   // Sort assist leaders from scorer data
@@ -165,6 +225,54 @@ export default function StatsPage() {
                         <span className="font-display" style={{ fontSize: 22, color: "#3b82f6" }}>{assists}</span>
                       </td>
                       <td style={{ padding: "12px 16px", textAlign: "center", color: "var(--muted)", fontSize: 14 }}>{stat?.goals?.total ?? 0}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )
+        ) : tab === "upsets" ? (
+          upsets.length === 0 ? (
+            <div style={{ padding: 40, textAlign: "center", color: "var(--muted)" }}>
+              No upsets yet — watch this space once the tournament begins June 11.
+            </div>
+          ) : (
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ borderBottom: "1px solid rgba(201,168,76,0.1)" }}>
+                  {["#", "Team", "Manager", "W", "D", "Bonus Pts"].map((h) => (
+                    <th key={h} className="font-condensed" style={{ padding: "10px 16px", textAlign: ["#","W","D","Bonus Pts"].includes(h) ? "center" : "left", color: "var(--muted)", fontSize: 12, fontWeight: 600, letterSpacing: 1 }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {upsets.map((entry, i) => {
+                  const team = TEAM_BY_ID[entry.teamId];
+                  const color = PARTICIPANT_COLORS[entry.participant] || "#666";
+                  return (
+                    <tr key={entry.teamId} style={{ borderBottom: i < upsets.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
+                      <td style={{ padding: "12px 16px", textAlign: "center", color: i < 3 ? "var(--gold)" : "var(--muted)", fontWeight: 700, fontSize: 14 }}>{i + 1}</td>
+                      <td style={{ padding: "12px 16px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          {team && <Flag code={team.code} size={24} />}
+                          <span className="font-condensed" style={{ color: "var(--white)", fontWeight: 600, fontSize: 15 }}>{team?.name || entry.teamId}</span>
+                        </div>
+                      </td>
+                      <td style={{ padding: "12px 16px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <div style={{ width: 7, height: 7, borderRadius: "50%", background: color }} />
+                          <span className="font-condensed" style={{ color, fontSize: 14, fontWeight: 600 }}>{entry.participant}</span>
+                        </div>
+                      </td>
+                      <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                        <span className="font-display" style={{ fontSize: 20, color: "#f97316" }}>{entry.upsetWins}</span>
+                      </td>
+                      <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                        <span className="font-display" style={{ fontSize: 20, color: "#eab308" }}>{entry.upsetDraws}</span>
+                      </td>
+                      <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                        <span className="font-display" style={{ fontSize: 22, color: "var(--gold)" }}>+{entry.bonusPoints}</span>
+                      </td>
                     </tr>
                   );
                 })}

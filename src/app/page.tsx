@@ -254,7 +254,7 @@ export default function Home() {
         <div className="card" style={{ padding: "16px" }}>
           <h3 className="font-display" style={{ fontSize: 16, color: "var(--gold)", marginBottom: 12 }}>POINTS SYSTEM</h3>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 6 }}>
-            {[["Group win","3"],["Group draw","1"],["Clean sheet","2"],["Goal scored","1 each"],["Round of 32","2"],["Round of 16","4"],["Quarter-Final","6"],["Semi-Final","8"],["Bronze Medal","10"],["Runner-up","14"],["Champion","20"],["Red card","-2"],["2 yellows","-1"]].map(([label, pts]) => (
+            {[["Group win","3"],["Group draw","1"],["Clean sheet","2"],["Goal scored","1 each"],["Upset win (ranked 30+ beats top 10)","3"],["Upset draw (ranked 30+ draws top 10)","1"],["Round of 32","2"],["Round of 16","4"],["Quarter-Final","6"],["Semi-Final","8"],["Bronze Medal","10"],["Runner-up","14"],["Champion","20"],["Red card","-2"],["2 yellows","-1"]].map(([label, pts]) => (
               <div key={label} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
                 <span style={{ color: "var(--muted)", fontSize: 12 }}>{label}</span>
                 <span className="font-condensed" style={{ color: pts.startsWith("-") ? "#ef4444" : "#e8c96a", fontWeight: 700, fontSize: 13 }}>
