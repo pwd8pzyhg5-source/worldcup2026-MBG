@@ -1,48 +1,54 @@
 import { NextResponse } from "next/server";
-import { getFixtures } from "@/lib/api-football";
 import { TEAM_BY_API_ID, TEAMS } from "../../../../data/teams";
 
-// Diagnostic endpoint — hit /api/debug to see what the API returns
-// and whether our team mapping is working.
-// Remove or protect this before making the app public.
+const BASE_URL = "https://v3.football.api-sports.io";
+
+async function rawFetch(path: string) {
+  const apiKey = process.env.API_FOOTBALL_KEY;
+  if (!apiKey) return { error: "API_FOOTBALL_KEY not set" };
+  const res = await fetch(`${BASE_URL}${path}`, {
+    headers: { "x-apisports-key": apiKey },
+    cache: "no-store",
+  });
+  const json = await res.json();
+  return { status: res.status, errors: json.errors, results: json.results, responseSample: json.response?.slice?.(0, 3) ?? json.response };
+}
+
 export async function GET() {
-  const fixtures = await getFixtures();
+  const [fixturesRaw, statusRaw] = await Promise.all([
+    rawFetch(`/fixtures?league=1&season=2026`),
+    rawFetch(`/status`),
+  ]);
 
-  if (!fixtures) {
-    return NextResponse.json({ error: "API_FOOTBALL_KEY missing or API unreachable" });
-  }
+  // Also try fetching a broader fixture list to see if any data exists
+  const liveRaw = await rawFetch(`/fixtures?live=all`);
 
-  // Collect every unique team the API has returned
+  // Collect matched teams from any fixture data
+  const sample = fixturesRaw.responseSample ?? [];
   const apiTeams: Record<number, { id: number; name: string; matched: boolean; ourId?: string }> = {};
-  for (const f of fixtures) {
-    const h = f.teams.home;
-    const a = f.teams.away;
-    if (!apiTeams[h.id]) {
-      const match = TEAM_BY_API_ID[h.id];
-      apiTeams[h.id] = { id: h.id, name: h.name, matched: !!match, ourId: match?.id };
-    }
-    if (!apiTeams[a.id]) {
-      const match = TEAM_BY_API_ID[a.id];
-      apiTeams[a.id] = { id: a.id, name: a.name, matched: !!match, ourId: match?.id };
+  for (const f of (Array.isArray(sample) ? sample : [])) {
+    for (const side of ["home", "away"] as const) {
+      const t = f.teams?.[side];
+      if (t && !apiTeams[t.id]) {
+        const match = TEAM_BY_API_ID[t.id];
+        apiTeams[t.id] = { id: t.id, name: t.name, matched: !!match, ourId: match?.id };
+      }
     }
   }
-
-  const teams = Object.values(apiTeams).sort((a, b) => a.name.localeCompare(b.name));
-  const matched = teams.filter((t) => t.matched).length;
-  const unmatched = teams.filter((t) => !t.matched);
-
-  // Teams in our data with no apiId
-  const teamsWithoutApiId = TEAMS.filter((t) => !t.apiId).map((t) => t.id);
 
   return NextResponse.json({
-    summary: {
-      totalFixtures: fixtures.length,
-      uniqueApiTeams: teams.length,
-      matched,
-      unmatched: unmatched.length,
+    apiStatus: statusRaw,
+    fixtures: {
+      results: fixturesRaw.results,
+      errors: fixturesRaw.errors,
+      httpStatus: fixturesRaw.status,
+      sampleTeams: Object.values(apiTeams),
     },
-    unmatchedApiTeams: unmatched,
-    allApiTeams: teams,
-    teamsWithoutApiId,
+    liveFixtures: {
+      results: liveRaw.results,
+      errors: liveRaw.errors,
+      sample: liveRaw.responseSample,
+    },
+    teamsWithoutApiId: TEAMS.filter((t) => !t.apiId).map((t) => t.id),
   });
 }
