@@ -151,7 +151,8 @@ export default function StatsPage() {
           <div style={{ padding: 40, textAlign: "center", color: "var(--muted)" }}>Loading...</div>
         ) : tab === "goals" ? (
           scorers.length === 0 ? noData : (
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 520 }}>
               <thead>
                 <tr style={{ borderBottom: "1px solid rgba(201,168,76,0.1)" }}>
                   {["#", "Player", "Team", "Goals", "Assists", "YC", "RC"].map((h) => (
@@ -191,10 +192,12 @@ export default function StatsPage() {
                 })}
               </tbody>
             </table>
+            </div>
           )
         ) : tab === "assists" ? (
           assistLeaders.length === 0 ? noData : (
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 400 }}>
               <thead>
                 <tr style={{ borderBottom: "1px solid rgba(201,168,76,0.1)" }}>
                   {["#", "Player", "Team", "Assists", "Goals"].map((h) => (
@@ -230,6 +233,7 @@ export default function StatsPage() {
                 })}
               </tbody>
             </table>
+            </div>
           )
         ) : tab === "upsets" ? (
           upsets.length === 0 ? (

@@ -21,7 +21,7 @@ interface LiveEvent {
 }
 
 interface LiveFixture {
-  fixture: { id: number; status: { short: string; elapsed: number | null } };
+  fixture: { id: number; status: { short: string; elapsed: number | null }; venue: { name: string; city: string } };
   teams: { home: { id: number; name: string }; away: { id: number; name: string } };
   goals: { home: number | null; away: number | null };
   events?: LiveEvent[];
@@ -178,10 +178,16 @@ export default function Home() {
                     </div>
                     {/* Owner row */}
                     {(homeOwner || awayOwner) && (
-                      <div className="font-condensed" style={{ display: "flex", gap: 8, fontSize: 11, marginBottom: goals.length || cards.length ? 8 : 0 }}>
+                      <div className="font-condensed" style={{ display: "flex", gap: 8, fontSize: 11, marginBottom: 4 }}>
                         <span style={{ flex: 1, textAlign: "right", color: homeOwner ? PARTICIPANT_COLORS[homeOwner] : "var(--muted)" }}>{homeOwner ?? "—"}</span>
                         <span style={{ minWidth: 40, textAlign: "center", color: "var(--muted)" }}>vs</span>
                         <span style={{ flex: 1, color: awayOwner ? PARTICIPANT_COLORS[awayOwner] : "var(--muted)" }}>{awayOwner ?? "—"}</span>
+                      </div>
+                    )}
+                    {/* Venue row */}
+                    {f.fixture.venue?.name && (
+                      <div className="font-condensed" style={{ fontSize: 11, color: "var(--muted)", textAlign: "center", marginBottom: goals.length || cards.length ? 8 : 0, opacity: 0.7 }}>
+                        📍 {f.fixture.venue.name}, {f.fixture.venue.city}
                       </div>
                     )}
                     {/* Events */}
