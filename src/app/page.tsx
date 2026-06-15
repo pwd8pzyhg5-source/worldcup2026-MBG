@@ -46,7 +46,7 @@ export default function Home() {
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [expandedRoster, setExpandedRoster] = useState<string | null>(null);
-  const [teamNameOwner, setTeamNameOwner] = useState<Record<string, string>>({});
+  const [apiIdOwner, setApiIdOwner] = useState<Record<number, string>>({});
 
   async function refreshLive() {
     const [liveRes, pointsRes] = await Promise.all([
@@ -76,14 +76,14 @@ export default function Home() {
       const liveData = await liveRes.json();
       setLiveFixtures(liveData.fixtures || []);
       const draftData = await draftRes.json();
-      const nameOwner: Record<string, string> = {};
+      const idOwner: Record<number, string> = {};
       for (const [participant, teamIds] of Object.entries(draftData.participants || {} as Record<string, string[]>)) {
         for (const tid of teamIds as string[]) {
           const team = TEAM_BY_ID[tid];
-          if (team) nameOwner[team.name.toLowerCase()] = participant;
+          if (team && team.apiId) idOwner[team.apiId] = participant;
         }
       }
-      setTeamNameOwner(nameOwner);
+      setApiIdOwner(idOwner);
       setLoading(false);
     }
     load();
@@ -92,8 +92,8 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
-  function getOwner(apiTeamName: string) {
-    return teamNameOwner[apiTeamName.toLowerCase()];
+  function getOwner(apiTeamId: number) {
+    return apiIdOwner[apiTeamId];
   }
 
   return (
@@ -158,8 +158,8 @@ export default function Home() {
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {liveFixtures.map((f) => {
-                const homeOwner = getOwner(f.teams.home.name);
-                const awayOwner = getOwner(f.teams.away.name);
+                const homeOwner = getOwner(f.teams.home.id);
+                const awayOwner = getOwner(f.teams.away.id);
                 const elapsed = f.fixture.status.elapsed;
                 const statusLabel = f.fixture.status.short === "HT" ? "HT" : elapsed ? `${elapsed}'` : f.fixture.status.short;
 

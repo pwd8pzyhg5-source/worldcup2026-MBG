@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Flag from "@/components/Flag";
-import { TEAMS, TEAM_BY_ID } from "../../../data/teams";
+import { TEAMS, TEAM_BY_ID, TEAM_BY_API_ID } from "../../../data/teams";
 
 interface StandingEntry {
   rank: number;
@@ -92,7 +92,7 @@ export default function BracketPage() {
                   </thead>
                   <tbody>
                     {(apiGroup || teamsInGroup.map((t) => ({ rank: 0, team: { id: t.apiId || 0, name: t.name, logo: "" }, points: 0, goalsDiff: 0, group: `Group ${letter}`, all: { played: 0, win: 0, draw: 0, lose: 0, goals: { for: 0, against: 0 } } }))).map((entry, i) => {
-                      const team = teamsInGroup[i] || TEAMS.find((t) => t.apiId === entry.team.id);
+                      const team = TEAM_BY_API_ID[entry.team.id] || teamsInGroup[i];
                       if (!team) return null;
                       const owner = teamOwner[team.id];
                       const ownerColor = owner ? PARTICIPANT_COLORS[owner] : undefined;
