@@ -329,13 +329,26 @@ export default function Home() {
                 {standings.map((p, i) => {
                   const color = PARTICIPANT_COLORS[p.name] || "#666";
                   const isExpanded = expandedRoster === p.name;
+                  const photoSlug = p.name.toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-");
                   return (
                     <>
                       <tr key={p.name} className="standings-row" style={{ borderBottom: "1px solid rgba(255,255,255,0.04)", cursor: "pointer" }} onClick={() => setExpandedRoster(isExpanded ? null : p.name)}>
                         <td className="rank-cell" style={{ padding: "14px 10px" }}>{RANK_LABELS[i]}</td>
                         <td style={{ padding: "14px 10px" }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            <div style={{ width: 5, height: 24, borderRadius: 3, background: color, flexShrink: 0 }} />
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={`/images/participants/${photoSlug}.jpg`}
+                              alt=""
+                              width={32} height={32}
+                              style={{ borderRadius: "50%", objectFit: "cover", border: `2px solid ${color}`, flexShrink: 0 }}
+                              onError={(e) => {
+                                const el = e.target as HTMLImageElement;
+                                el.style.display = "none";
+                                (el.nextSibling as HTMLElement | null)?.style && ((el.nextSibling as HTMLElement).style.display = "block");
+                              }}
+                            />
+                            <div style={{ width: 5, height: 24, borderRadius: 3, background: color, flexShrink: 0, display: "none" }} />
                             <span className="font-condensed" style={{ color: "var(--white)", fontSize: 16, fontWeight: 700 }}>{p.name}</span>
                             <span style={{ color: "var(--muted)", fontSize: 11 }}>{isExpanded ? "▲" : "▼"}</span>
                           </div>
