@@ -19,7 +19,7 @@ const PARTICIPANT_COLORS: Record<string, string> = {
   "Dr. Rick": "#f59e0b",
   "Sexy Tecsy": "#ec4899",
   "Lazy Bones": "#8b5cf6",
-  "Bradical Bray Bray": "#f97316",
+  "Bradical Bray": "#f97316",
 };
 
 export default function BracketPage() {
