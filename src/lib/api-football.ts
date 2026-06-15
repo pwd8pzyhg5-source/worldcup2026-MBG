@@ -25,7 +25,7 @@ async function apiFetch<T>(
   try {
     const res = await fetch(`${BASE_URL}${path}`, {
       headers: { "x-apisports-key": apiKey },
-      next: { revalidate: Math.floor(ttlMs / 1000) },
+      cache: "no-store",
     });
 
     if (!res.ok) {
@@ -96,15 +96,15 @@ export interface APITopScorer {
   }>;
 }
 
-// 60 second TTL for live matches, 5 min for others
+// 20 second TTL for live matches, 5 min for others
 export const getFixtures = () =>
   apiFetch<APIFixture[]>(`/fixtures?league=${LEAGUE_ID}&season=${SEASON}`, 5 * 60 * 1000);
 
 export const getLiveFixtures = () =>
-  apiFetch<APIFixture[]>(`/fixtures?league=${LEAGUE_ID}&live=all`, 60 * 1000);
+  apiFetch<APIFixture[]>(`/fixtures?league=${LEAGUE_ID}&live=all`, 20 * 1000);
 
 export const getFixtureEvents = (fixtureId: number) =>
-  apiFetch<APIEvent[]>(`/fixtures/events?fixture=${fixtureId}`, 60 * 1000);
+  apiFetch<APIEvent[]>(`/fixtures/events?fixture=${fixtureId}`, 20 * 1000);
 
 export const getStandings = () =>
   apiFetch<APIStandingEntry[][]>(`/standings?league=${LEAGUE_ID}&season=${SEASON}`, 10 * 60 * 1000);

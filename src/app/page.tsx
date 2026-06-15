@@ -87,8 +87,8 @@ export default function Home() {
       setLoading(false);
     }
     load();
-    // Poll every 60s — refreshes both live scores and standings
-    const interval = setInterval(refreshLive, 60000);
+    // Poll every 25s — refreshes both live scores and standings
+    const interval = setInterval(refreshLive, 25000);
     return () => clearInterval(interval);
   }, []);
 
