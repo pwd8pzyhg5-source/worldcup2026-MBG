@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Flag from "@/components/Flag";
-import { TEAM_BY_ID } from "../../data/teams";
+import { TEAM_BY_ID, TEAM_BY_API_ID } from "../../data/teams";
 
 interface ParticipantStanding {
   name: string;
@@ -21,7 +21,7 @@ interface LiveEvent {
 }
 
 interface LiveFixture {
-  fixture: { id: number; status: { short: string; elapsed: number | null }; venue: { name: string; city: string } };
+  fixture: { id: number; date: string; status: { short: string; elapsed: number | null }; venue: { name: string; city: string } };
   teams: { home: { id: number; name: string }; away: { id: number; name: string } };
   goals: { home: number | null; away: number | null };
   events?: LiveEvent[];
@@ -47,6 +47,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [expandedRoster, setExpandedRoster] = useState<string | null>(null);
   const [apiIdOwner, setApiIdOwner] = useState<Record<number, string>>({});
+  const [upcomingFixtures, setUpcomingFixtures] = useState<LiveFixture[]>([]);
 
   async function refreshLive() {
     const [liveRes, pointsRes] = await Promise.all([
@@ -63,10 +64,11 @@ export default function Home() {
 
   useEffect(() => {
     async function load() {
-      const [pointsRes, liveRes, draftRes] = await Promise.all([
+      const [pointsRes, liveRes, draftRes, upcomingRes] = await Promise.all([
         fetch("/api/points"),
         fetch("/api/fixtures?live=true"),
         fetch("/api/draft"),
+        fetch("/api/fixtures?upcoming=true"),
       ]);
       const pointsData = await pointsRes.json();
       setStandings(pointsData.standings || []);
@@ -84,6 +86,8 @@ export default function Home() {
         }
       }
       setApiIdOwner(idOwner);
+      const upcomingData = await upcomingRes.json();
+      setUpcomingFixtures(upcomingData.fixtures || []);
       setLoading(false);
     }
     load();
@@ -235,6 +239,53 @@ export default function Home() {
             <Link href="/draft" style={{ padding: "8px 18px", background: "var(--gold)", color: "#0a0e1a", borderRadius: 6, textDecoration: "none", fontWeight: 700, fontSize: 13, whiteSpace: "nowrap", flexShrink: 0 }}>
               Go to Draft →
             </Link>
+          </div>
+        )}
+
+        {/* Upcoming fixtures */}
+        {!loading && upcomingFixtures.length > 0 && (
+          <div className="card" style={{ padding: "12px 14px", marginBottom: 16 }}>
+            <div className="font-condensed" style={{ color: "var(--gold)", fontSize: 12, fontWeight: 700, letterSpacing: 1, marginBottom: 10 }}>UP NEXT</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {upcomingFixtures.map((f) => {
+                const homeOwner = getOwner(f.teams.home.id);
+                const awayOwner = getOwner(f.teams.away.id);
+                const homeTeam = TEAM_BY_API_ID[f.teams.home.id];
+                const awayTeam = TEAM_BY_API_ID[f.teams.away.id];
+                const kickoff = new Date(f.fixture.date);
+                const dateLabel = kickoff.toLocaleDateString("en-CA", { weekday: "short", month: "short", day: "numeric" });
+                const timeLabel = kickoff.toLocaleTimeString("en-CA", { hour: "numeric", minute: "2-digit" });
+                return (
+                  <div key={f.fixture.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", background: "rgba(255,255,255,0.03)", borderRadius: 8, flexWrap: "wrap" }}>
+                    {/* Teams + score placeholder */}
+                    <div className="font-condensed" style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 180 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                        {homeTeam && <Flag code={homeTeam.code} size={16} />}
+                        <span style={{ color: homeOwner ? PARTICIPANT_COLORS[homeOwner] : "var(--white)", fontWeight: 700, fontSize: 13 }}>{f.teams.home.name}</span>
+                      </div>
+                      <span style={{ color: "var(--muted)", fontSize: 12 }}>vs</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                        {awayTeam && <Flag code={awayTeam.code} size={16} />}
+                        <span style={{ color: awayOwner ? PARTICIPANT_COLORS[awayOwner] : "var(--white)", fontWeight: 700, fontSize: 13 }}>{f.teams.away.name}</span>
+                      </div>
+                    </div>
+                    {/* Owner matchup */}
+                    {(homeOwner || awayOwner) && (
+                      <div className="font-condensed" style={{ fontSize: 11, color: "var(--muted)", whiteSpace: "nowrap" }}>
+                        <span style={{ color: homeOwner ? PARTICIPANT_COLORS[homeOwner] : "var(--muted)" }}>{homeOwner ?? "—"}</span>
+                        <span style={{ margin: "0 4px" }}>vs</span>
+                        <span style={{ color: awayOwner ? PARTICIPANT_COLORS[awayOwner] : "var(--muted)" }}>{awayOwner ?? "—"}</span>
+                      </div>
+                    )}
+                    {/* Time + venue */}
+                    <div className="font-condensed" style={{ fontSize: 11, color: "var(--muted)", textAlign: "right", whiteSpace: "nowrap" }}>
+                      <span style={{ color: "var(--white)", fontWeight: 600 }}>{dateLabel} · {timeLabel}</span>
+                      {f.fixture.venue?.name && <><br /><span style={{ opacity: 0.6 }}>📍 {f.fixture.venue.name}, {f.fixture.venue.city}</span></>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 
