@@ -184,28 +184,34 @@ export default function Home() {
                         <span style={{ flex: 1, color: awayOwner ? PARTICIPANT_COLORS[awayOwner] : "var(--muted)" }}>{awayOwner ?? "—"}</span>
                       </div>
                     )}
-                    {/* Venue row */}
-                    {f.fixture.venue?.name && (
-                      <div className="font-condensed" style={{ fontSize: 11, color: "var(--muted)", textAlign: "center", marginBottom: goals.length || cards.length ? 8 : 0, opacity: 0.7 }}>
-                        📍 {f.fixture.venue.name}, {f.fixture.venue.city}
-                      </div>
-                    )}
                     {/* Events */}
                     {(goals.length > 0 || cards.length > 0) && (
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                        {goals.map((e, i) => (
-                          <span key={i} className="font-condensed" style={{ fontSize: 11, background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.25)", borderRadius: 4, padding: "2px 6px", color: "#10b981" }}>
-                            ⚽ {e.player.name} {e.time.elapsed}&apos;{e.detail === "Own Goal" ? " (OG)" : ""}
-                          </span>
-                        ))}
-                        {cards.map((e, i) => {
-                          const isRed = e.detail === "Red Card" || e.detail === "Second Yellow Card";
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: f.fixture.venue?.name ? 6 : 0 }}>
+                        {goals.map((e, i) => {
+                          const parts = e.player.name.split(" ");
+                          const short = parts.length > 1 ? `${parts[0][0]}. ${parts.slice(1).join(" ")}` : e.player.name;
                           return (
-                            <span key={i} className="font-condensed" style={{ fontSize: 11, background: isRed ? "rgba(239,68,68,0.12)" : "rgba(234,179,8,0.12)", border: `1px solid ${isRed ? "rgba(239,68,68,0.3)" : "rgba(234,179,8,0.3)"}`, borderRadius: 4, padding: "2px 6px", color: isRed ? "#ef4444" : "#eab308" }}>
-                              {isRed ? "🟥" : "🟨"} {e.player.name} {e.time.elapsed}&apos;
+                            <span key={i} className="font-condensed" style={{ fontSize: 11, background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.25)", borderRadius: 4, padding: "2px 6px", color: "#10b981" }}>
+                              ⚽ {short} {e.time.elapsed}&apos;{e.detail === "Own Goal" ? " (OG)" : ""}
                             </span>
                           );
                         })}
+                        {cards.map((e, i) => {
+                          const parts = e.player.name.split(" ");
+                          const short = parts.length > 1 ? `${parts[0][0]}. ${parts.slice(1).join(" ")}` : e.player.name;
+                          const isRed = e.detail === "Red Card" || e.detail === "Second Yellow Card";
+                          return (
+                            <span key={i} className="font-condensed" style={{ fontSize: 11, background: isRed ? "rgba(239,68,68,0.12)" : "rgba(234,179,8,0.12)", border: `1px solid ${isRed ? "rgba(239,68,68,0.3)" : "rgba(234,179,8,0.3)"}`, borderRadius: 4, padding: "2px 6px", color: isRed ? "#ef4444" : "#eab308" }}>
+                              {isRed ? "🟥" : "🟨"} {short} {e.time.elapsed}&apos;
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
+                    {/* Venue — shown last */}
+                    {f.fixture.venue?.name && (
+                      <div className="font-condensed" style={{ fontSize: 11, color: "var(--muted)", textAlign: "center", marginTop: 2, opacity: 0.65 }}>
+                        📍 {f.fixture.venue.name}, {f.fixture.venue.city}
                       </div>
                     )}
                   </div>

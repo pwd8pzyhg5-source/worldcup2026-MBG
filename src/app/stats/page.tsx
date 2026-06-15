@@ -119,31 +119,34 @@ export default function StatsPage() {
       <h1 className="font-display" style={{ fontSize: 36, color: "var(--gold)", marginBottom: 24 }}>STATS HUB</h1>
 
       {/* Tabs */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 24, borderBottom: "1px solid rgba(201,168,76,0.15)", paddingBottom: 0 }}>
-        {tabs.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className="font-condensed"
-            style={{
-              padding: "10px 20px",
-              background: "transparent",
-              border: "none",
-              borderBottom: tab === t.key ? "2px solid var(--gold)" : "2px solid transparent",
-              color: tab === t.key ? "var(--gold)" : "var(--muted)",
-              cursor: "pointer",
-              fontSize: 16,
-              fontWeight: 700,
-              letterSpacing: 0.5,
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              marginBottom: -1,
-            }}
-          >
-            <span>{t.emoji}</span> {t.label}
-          </button>
-        ))}
+      <div style={{ overflowX: "auto", marginBottom: 24, borderBottom: "1px solid rgba(201,168,76,0.15)" }}>
+        <div style={{ display: "flex", gap: 0, minWidth: "max-content" }}>
+          {tabs.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className="font-condensed"
+              style={{
+                padding: "10px 18px",
+                background: "transparent",
+                border: "none",
+                borderBottom: tab === t.key ? "2px solid var(--gold)" : "2px solid transparent",
+                color: tab === t.key ? "var(--gold)" : "var(--muted)",
+                cursor: "pointer",
+                fontSize: 15,
+                fontWeight: 700,
+                letterSpacing: 0.5,
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                marginBottom: -1,
+                whiteSpace: "nowrap",
+              }}
+            >
+              <span>{t.emoji}</span> {t.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="card" style={{ overflow: "hidden" }}>
