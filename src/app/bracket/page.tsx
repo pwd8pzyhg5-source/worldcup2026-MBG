@@ -29,15 +29,20 @@ export default function BracketPage() {
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/standings").then((r) => r.json()),
-      fetch("/api/draft").then((r) => r.json()),
-    ]).then(([standingsData, draftData]) => {
-      setGroupStandings(standingsData.standings || []);
-      setLastUpdated(standingsData.lastUpdated);
-      setDraft(draftData);
-      setLoading(false);
-    });
+    function refresh(initial = false) {
+      Promise.all([
+        fetch("/api/standings").then((r) => r.json()),
+        ...(initial ? [fetch("/api/draft").then((r) => r.json())] : []),
+      ]).then(([standingsData, draftData]) => {
+        setGroupStandings(standingsData.standings || []);
+        setLastUpdated(standingsData.lastUpdated);
+        if (draftData) setDraft(draftData);
+        if (initial) setLoading(false);
+      });
+    }
+    refresh(true);
+    const interval = setInterval(() => refresh(false), 2 * 60 * 1000);
+    return () => clearInterval(interval);
   }, []);
 
   // Build teamId -> participant map from draft

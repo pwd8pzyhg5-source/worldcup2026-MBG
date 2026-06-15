@@ -107,7 +107,7 @@ export const getFixtureEvents = (fixtureId: number) =>
   apiFetch<APIEvent[]>(`/fixtures/events?fixture=${fixtureId}`, 20 * 1000);
 
 export const getStandings = () =>
-  apiFetch<APIStandingEntry[][]>(`/standings?league=${LEAGUE_ID}&season=${SEASON}`, 10 * 60 * 1000);
+  apiFetch<APIStandingEntry[][]>(`/standings?league=${LEAGUE_ID}&season=${SEASON}`, 2 * 60 * 1000);
 
 export const getTopScorers = () =>
   apiFetch<APITopScorer[]>(`/players/topscorers?league=${LEAGUE_ID}&season=${SEASON}`, 10 * 60 * 1000);
