@@ -85,7 +85,7 @@ export default function StatsPage() {
               participant: standing.name,
               upsetWins: wins,
               upsetDraws: draws,
-              bonusPoints: wins * 2 + draws * 0.5,
+              bonusPoints: wins * 3 + draws * 1,
             });
           }
         }
