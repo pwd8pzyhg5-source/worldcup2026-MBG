@@ -165,7 +165,17 @@ export default function Home() {
 
                 // Separate goals and cards from events
                 const goals = (f.events ?? []).filter(e => e.type === "Goal" && e.detail !== "Missed Penalty");
-                const cards = (f.events ?? []).filter(e => e.type === "Card");
+                const allCards = (f.events ?? []).filter(e => e.type === "Card");
+
+                // Per-team card counts for compact summary
+                const homeYellows = allCards.filter(e => e.team.id === f.teams.home.id && e.detail === "Yellow Card").length;
+                const awayYellows = allCards.filter(e => e.team.id === f.teams.away.id && e.detail === "Yellow Card").length;
+                const homeReds = allCards.filter(e => e.team.id === f.teams.home.id && (e.detail === "Red Card" || e.detail === "Second Yellow Card")).length;
+                const awayReds = allCards.filter(e => e.team.id === f.teams.away.id && (e.detail === "Red Card" || e.detail === "Second Yellow Card")).length;
+                const hasCards = homeYellows + awayYellows + homeReds + awayReds > 0;
+
+                const cardSummary = (yellows: number, reds: number) =>
+                  [yellows > 0 ? `🟨${yellows}` : "", reds > 0 ? `🟥${reds}` : ""].filter(Boolean).join(" ");
 
                 return (
                   <div key={f.fixture.id} style={{ background: "rgba(239,68,68,0.06)", borderRadius: 8, border: "1px solid rgba(239,68,68,0.18)", padding: "10px 12px" }}>
@@ -176,16 +186,20 @@ export default function Home() {
                       <span style={{ color: "var(--gold)", fontWeight: 800, fontSize: 18, minWidth: 40, textAlign: "center" }}>{f.goals.home ?? 0}–{f.goals.away ?? 0}</span>
                       <span style={{ color: awayOwner ? PARTICIPANT_COLORS[awayOwner] : "var(--white)", fontSize: 14, fontWeight: 700, flex: 1 }}>{f.teams.away.name}</span>
                     </div>
-                    {/* Owner row */}
+                    {/* Owner + card summary row */}
                     {(homeOwner || awayOwner) && (
-                      <div className="font-condensed" style={{ display: "flex", gap: 8, fontSize: 11, marginBottom: 4 }}>
-                        <span style={{ flex: 1, textAlign: "right", color: homeOwner ? PARTICIPANT_COLORS[homeOwner] : "var(--muted)" }}>{homeOwner ?? "—"}</span>
+                      <div className="font-condensed" style={{ display: "flex", gap: 8, fontSize: 11, marginBottom: goals.length ? 6 : 0 }}>
+                        <span style={{ flex: 1, textAlign: "right", color: homeOwner ? PARTICIPANT_COLORS[homeOwner] : "var(--muted)" }}>
+                          {homeOwner ?? "—"}{hasCards && cardSummary(homeYellows, homeReds) ? <span style={{ marginLeft: 5, opacity: 0.9 }}>{cardSummary(homeYellows, homeReds)}</span> : null}
+                        </span>
                         <span style={{ minWidth: 40, textAlign: "center", color: "var(--muted)" }}>vs</span>
-                        <span style={{ flex: 1, color: awayOwner ? PARTICIPANT_COLORS[awayOwner] : "var(--muted)" }}>{awayOwner ?? "—"}</span>
+                        <span style={{ flex: 1, color: awayOwner ? PARTICIPANT_COLORS[awayOwner] : "var(--muted)" }}>
+                          {hasCards && cardSummary(awayYellows, awayReds) ? <span style={{ marginRight: 5, opacity: 0.9 }}>{cardSummary(awayYellows, awayReds)}</span> : null}{awayOwner ?? "—"}
+                        </span>
                       </div>
                     )}
-                    {/* Events */}
-                    {(goals.length > 0 || cards.length > 0) && (
+                    {/* Goal events */}
+                    {goals.length > 0 && (
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: f.fixture.venue?.name ? 6 : 0 }}>
                         {goals.map((e, i) => {
                           const parts = e.player.name.split(" ");
@@ -193,16 +207,6 @@ export default function Home() {
                           return (
                             <span key={i} className="font-condensed" style={{ fontSize: 11, background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.25)", borderRadius: 4, padding: "2px 6px", color: "#10b981" }}>
                               ⚽ {short} {e.time.elapsed}&apos;{e.detail === "Own Goal" ? " (OG)" : ""}
-                            </span>
-                          );
-                        })}
-                        {cards.map((e, i) => {
-                          const parts = e.player.name.split(" ");
-                          const short = parts.length > 1 ? `${parts[0][0]}. ${parts.slice(1).join(" ")}` : e.player.name;
-                          const isRed = e.detail === "Red Card" || e.detail === "Second Yellow Card";
-                          return (
-                            <span key={i} className="font-condensed" style={{ fontSize: 11, background: isRed ? "rgba(239,68,68,0.12)" : "rgba(234,179,8,0.12)", border: `1px solid ${isRed ? "rgba(239,68,68,0.3)" : "rgba(234,179,8,0.3)"}`, borderRadius: 4, padding: "2px 6px", color: isRed ? "#ef4444" : "#eab308" }}>
-                              {isRed ? "🟥" : "🟨"} {short} {e.time.elapsed}&apos;
                             </span>
                           );
                         })}

@@ -92,8 +92,7 @@ export function calculateTeamPoints(
     const isAway = match.awayTeamId === teamId;
     if (!isHome && !isAway) continue;
 
-    const finished = ["FT", "AET", "PEN"].includes(match.status);
-    if (!finished) continue;
+    // Include both finished and in-progress matches for live standings
 
     const myGoals = isHome ? match.homeGoals : match.awayGoals;
     const theirGoals = isHome ? match.awayGoals : match.homeGoals;
