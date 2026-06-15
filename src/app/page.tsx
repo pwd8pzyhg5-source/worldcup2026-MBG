@@ -202,18 +202,32 @@ export default function Home() {
                         </span>
                       </div>
                     )}
-                    {/* Goal events */}
+                    {/* Goal events — split home left / away right */}
                     {goals.length > 0 && (
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: f.fixture.venue?.name ? 6 : 0 }}>
-                        {goals.map((e, i) => {
-                          const parts = e.player.name.split(" ");
-                          const short = parts.length > 1 ? `${parts[0][0]}. ${parts.slice(1).join(" ")}` : e.player.name;
-                          return (
-                            <span key={i} className="font-condensed" style={{ fontSize: 11, background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.25)", borderRadius: 4, padding: "2px 6px", color: "#10b981" }}>
-                              ⚽ {short} {e.time.elapsed}&apos;{e.detail === "Own Goal" ? " (OG)" : ""}
-                            </span>
-                          );
-                        })}
+                      <div className="font-condensed" style={{ display: "flex", gap: 8, fontSize: 11, marginBottom: f.fixture.venue?.name ? 6 : 0 }}>
+                        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
+                          {goals.filter(e => e.team.id === f.teams.home.id).map((e, i) => {
+                            const parts = e.player.name.split(" ");
+                            const short = parts.length > 1 ? `${parts[0][0]}. ${parts.slice(1).join(" ")}` : e.player.name;
+                            return (
+                              <span key={i} style={{ color: "#10b981" }}>
+                                {short} {e.time.elapsed}&apos;{e.detail === "Own Goal" ? " (OG)" : ""} ⚽
+                              </span>
+                            );
+                          })}
+                        </div>
+                        <div style={{ minWidth: 40 }} />
+                        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 3 }}>
+                          {goals.filter(e => e.team.id === f.teams.away.id).map((e, i) => {
+                            const parts = e.player.name.split(" ");
+                            const short = parts.length > 1 ? `${parts[0][0]}. ${parts.slice(1).join(" ")}` : e.player.name;
+                            return (
+                              <span key={i} style={{ color: "#10b981" }}>
+                                ⚽ {short} {e.time.elapsed}&apos;{e.detail === "Own Goal" ? " (OG)" : ""}
+                              </span>
+                            );
+                          })}
+                        </div>
                       </div>
                     )}
                     {/* Venue — shown last */}
