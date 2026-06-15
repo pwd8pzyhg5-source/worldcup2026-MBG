@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { readDraft } from "@/lib/draft";
-import { getFixtures, getFixtureEvents, parseRound } from "@/lib/api-football";
+import { getFixtures, getLiveFixtures, getFixtureEvents, parseRound } from "@/lib/api-football";
 import { calculateStandings, MatchResult } from "@/lib/points";
 import { TEAM_BY_API_ID } from "../../../../data/teams";
 
@@ -18,19 +18,30 @@ export async function GET() {
     return NextResponse.json({ standings, draftCompleted: false });
   }
 
-  const fixtures = await getFixtures();
+  const [fixtures, liveFixtures] = await Promise.all([getFixtures(), getLiveFixtures()]);
   if (!fixtures) {
     return NextResponse.json({ error: "API unavailable", standings: [], draftCompleted: true });
   }
+
+  // Merge live fixture data into full fixture list so in-progress scores are current
+  const liveById: Record<number, typeof liveFixtures extends (infer T)[] | null ? T : never> = {};
+  if (liveFixtures) {
+    for (const lf of liveFixtures) liveById[lf.fixture.id] = lf;
+  }
+
+  const hasLiveGames = (liveFixtures?.length ?? 0) > 0;
 
   // Build match results + advancement map from fixture data
   const results: MatchResult[] = [];
   const advancementMap: Record<string, string[]> = {};
 
-  for (const fixture of fixtures) {
+  for (const rawFixture of fixtures) {
+    // Use live data if available for this fixture (more up-to-date score)
+    const fixture = liveById[rawFixture.fixture.id] ?? rawFixture;
     const status = fixture.fixture.status.short as MatchResult["status"];
     const finished = ["FT", "AET", "PEN"].includes(status);
-    if (!finished) continue;
+    const inProgress = ["1H", "HT", "2H", "ET", "P"].includes(status);
+    if (!finished && !inProgress) continue;
 
     const homeTeam = TEAM_BY_API_ID[fixture.teams.home.id];
     const awayTeam = TEAM_BY_API_ID[fixture.teams.away.id];
@@ -117,6 +128,7 @@ export async function GET() {
   return NextResponse.json({
     standings,
     draftCompleted: true,
+    hasLiveGames,
     lastUpdated: new Date().toISOString(),
   });
 }

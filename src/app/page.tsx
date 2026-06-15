@@ -12,10 +12,19 @@ interface ParticipantStanding {
   teamPoints: Array<{ teamId: string; total: number; breakdown: Record<string, number> }>;
 }
 
+interface LiveEvent {
+  time: { elapsed: number };
+  team: { id: number; name: string };
+  player: { name: string };
+  type: string;
+  detail: string;
+}
+
 interface LiveFixture {
-  fixture: { id: number; status: { short: string } };
-  teams: { home: { name: string }; away: { name: string } };
+  fixture: { id: number; status: { short: string; elapsed: number | null } };
+  teams: { home: { id: number; name: string }; away: { id: number; name: string } };
   goals: { home: number | null; away: number | null };
+  events?: LiveEvent[];
 }
 
 const PARTICIPANT_COLORS: Record<string, string> = {
@@ -32,11 +41,25 @@ const RANK_LABELS = ["🥇", "🥈", "🥉", "4th", "5th", "6th"];
 export default function Home() {
   const [standings, setStandings] = useState<ParticipantStanding[]>([]);
   const [draftCompleted, setDraftCompleted] = useState(false);
+  const [hasLiveGames, setHasLiveGames] = useState(false);
   const [liveFixtures, setLiveFixtures] = useState<LiveFixture[]>([]);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [expandedRoster, setExpandedRoster] = useState<string | null>(null);
   const [teamNameOwner, setTeamNameOwner] = useState<Record<string, string>>({});
+
+  async function refreshLive() {
+    const [liveRes, pointsRes] = await Promise.all([
+      fetch("/api/fixtures?live=true"),
+      fetch("/api/points"),
+    ]);
+    const liveData = await liveRes.json();
+    setLiveFixtures(liveData.fixtures || []);
+    const pointsData = await pointsRes.json();
+    setStandings(pointsData.standings || []);
+    setHasLiveGames(pointsData.hasLiveGames || false);
+    setLastUpdated(pointsData.lastUpdated);
+  }
 
   useEffect(() => {
     async function load() {
@@ -48,6 +71,7 @@ export default function Home() {
       const pointsData = await pointsRes.json();
       setStandings(pointsData.standings || []);
       setDraftCompleted(pointsData.draftCompleted || false);
+      setHasLiveGames(pointsData.hasLiveGames || false);
       setLastUpdated(pointsData.lastUpdated);
       const liveData = await liveRes.json();
       setLiveFixtures(liveData.fixtures || []);
@@ -63,9 +87,8 @@ export default function Home() {
       setLoading(false);
     }
     load();
-    const interval = setInterval(() => {
-      fetch("/api/fixtures?live=true").then((r) => r.json()).then((d) => setLiveFixtures(d.fixtures || []));
-    }, 60000);
+    // Poll every 60s — refreshes both live scores and standings
+    const interval = setInterval(refreshLive, 60000);
     return () => clearInterval(interval);
   }, []);
 
@@ -128,31 +151,61 @@ export default function Home() {
 
         {/* Live ticker */}
         {liveFixtures.length > 0 && (
-          <div className="card" style={{ padding: "10px 14px", marginBottom: 16, display: "flex", gap: 12, overflowX: "auto", alignItems: "center" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+          <div className="card" style={{ padding: "12px 14px", marginBottom: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
               <span className="live-dot" />
-              <span className="font-condensed" style={{ color: "#ef4444", fontWeight: 600, fontSize: 12, letterSpacing: 1 }}>LIVE</span>
+              <span className="font-condensed" style={{ color: "#ef4444", fontWeight: 600, fontSize: 12, letterSpacing: 1 }}>LIVE NOW</span>
             </div>
-            {liveFixtures.map((f) => {
-              const homeOwner = getOwner(f.teams.home.name);
-              const awayOwner = getOwner(f.teams.away.name);
-              return (
-                <div key={f.fixture.id} className="font-condensed" style={{ display: "flex", flexDirection: "column", gap: 2, padding: "6px 10px", background: "rgba(239,68,68,0.08)", borderRadius: 6, border: "1px solid rgba(239,68,68,0.2)", flexShrink: 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600 }}>
-                    <span style={{ color: "var(--white)" }}>{f.teams.home.name}</span>
-                    <span style={{ color: "var(--gold)", fontWeight: 700 }}>{f.goals.home ?? 0}–{f.goals.away ?? 0}</span>
-                    <span style={{ color: "var(--white)" }}>{f.teams.away.name}</span>
-                  </div>
-                  {(homeOwner || awayOwner) && (
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11 }}>
-                      <span style={{ color: homeOwner ? PARTICIPANT_COLORS[homeOwner] : "var(--muted)" }}>{homeOwner ?? "—"}</span>
-                      <span style={{ color: "var(--muted)" }}>vs</span>
-                      <span style={{ color: awayOwner ? PARTICIPANT_COLORS[awayOwner] : "var(--muted)" }}>{awayOwner ?? "—"}</span>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {liveFixtures.map((f) => {
+                const homeOwner = getOwner(f.teams.home.name);
+                const awayOwner = getOwner(f.teams.away.name);
+                const elapsed = f.fixture.status.elapsed;
+                const statusLabel = f.fixture.status.short === "HT" ? "HT" : elapsed ? `${elapsed}'` : f.fixture.status.short;
+
+                // Separate goals and cards from events
+                const goals = (f.events ?? []).filter(e => e.type === "Goal" && e.detail !== "Missed Penalty");
+                const cards = (f.events ?? []).filter(e => e.type === "Card");
+
+                return (
+                  <div key={f.fixture.id} style={{ background: "rgba(239,68,68,0.06)", borderRadius: 8, border: "1px solid rgba(239,68,68,0.18)", padding: "10px 12px" }}>
+                    {/* Score row */}
+                    <div className="font-condensed" style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                      <span style={{ color: "#ef4444", fontSize: 11, fontWeight: 700, minWidth: 28 }}>{statusLabel}</span>
+                      <span style={{ color: homeOwner ? PARTICIPANT_COLORS[homeOwner] : "var(--white)", fontSize: 14, fontWeight: 700, flex: 1, textAlign: "right" }}>{f.teams.home.name}</span>
+                      <span style={{ color: "var(--gold)", fontWeight: 800, fontSize: 18, minWidth: 40, textAlign: "center" }}>{f.goals.home ?? 0}–{f.goals.away ?? 0}</span>
+                      <span style={{ color: awayOwner ? PARTICIPANT_COLORS[awayOwner] : "var(--white)", fontSize: 14, fontWeight: 700, flex: 1 }}>{f.teams.away.name}</span>
                     </div>
-                  )}
-                </div>
-              );
-            })}
+                    {/* Owner row */}
+                    {(homeOwner || awayOwner) && (
+                      <div className="font-condensed" style={{ display: "flex", gap: 8, fontSize: 11, marginBottom: goals.length || cards.length ? 8 : 0 }}>
+                        <span style={{ flex: 1, textAlign: "right", color: homeOwner ? PARTICIPANT_COLORS[homeOwner] : "var(--muted)" }}>{homeOwner ?? "—"}</span>
+                        <span style={{ minWidth: 40, textAlign: "center", color: "var(--muted)" }}>vs</span>
+                        <span style={{ flex: 1, color: awayOwner ? PARTICIPANT_COLORS[awayOwner] : "var(--muted)" }}>{awayOwner ?? "—"}</span>
+                      </div>
+                    )}
+                    {/* Events */}
+                    {(goals.length > 0 || cards.length > 0) && (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                        {goals.map((e, i) => (
+                          <span key={i} className="font-condensed" style={{ fontSize: 11, background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.25)", borderRadius: 4, padding: "2px 6px", color: "#10b981" }}>
+                            ⚽ {e.player.name} {e.time.elapsed}&apos;{e.detail === "Own Goal" ? " (OG)" : ""}
+                          </span>
+                        ))}
+                        {cards.map((e, i) => {
+                          const isRed = e.detail === "Red Card" || e.detail === "Second Yellow Card";
+                          return (
+                            <span key={i} className="font-condensed" style={{ fontSize: 11, background: isRed ? "rgba(239,68,68,0.12)" : "rgba(234,179,8,0.12)", border: `1px solid ${isRed ? "rgba(239,68,68,0.3)" : "rgba(234,179,8,0.3)"}`, borderRadius: 4, padding: "2px 6px", color: isRed ? "#ef4444" : "#eab308" }}>
+                              {isRed ? "🟥" : "🟨"} {e.player.name} {e.time.elapsed}&apos;
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 
@@ -171,8 +224,13 @@ export default function Home() {
 
         {/* Standings */}
         <div className="card" style={{ overflow: "hidden", marginBottom: 20 }}>
-          <div style={{ padding: "14px 16px", borderBottom: "1px solid rgba(201,168,76,0.1)" }}>
+          <div style={{ padding: "14px 16px", borderBottom: "1px solid rgba(201,168,76,0.1)", display: "flex", alignItems: "center", gap: 10 }}>
             <h2 className="font-display" style={{ fontSize: 20, color: "var(--gold)" }}>STANDINGS</h2>
+            {hasLiveGames && (
+              <span className="font-condensed" style={{ fontSize: 11, color: "#ef4444", fontWeight: 700, letterSpacing: 1, display: "flex", alignItems: "center", gap: 4 }}>
+                <span className="live-dot" />UPDATING LIVE
+              </span>
+            )}
           </div>
           {loading ? (
             <div style={{ padding: 40, textAlign: "center", color: "var(--muted)" }}>Loading...</div>

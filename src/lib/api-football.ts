@@ -45,7 +45,7 @@ async function apiFetch<T>(
 export interface APIFixture {
   fixture: {
     id: number;
-    status: { short: string; long: string };
+    status: { short: string; long: string; elapsed: number | null };
     date: string;
     venue: { name: string; city: string };
   };
@@ -61,6 +61,7 @@ export interface APIFixture {
     extratime: { home: number | null; away: number | null };
     penalty: { home: number | null; away: number | null };
   };
+  events?: APIEvent[];
 }
 
 export interface APIEvent {
