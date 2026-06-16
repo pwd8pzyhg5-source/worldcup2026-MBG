@@ -123,8 +123,8 @@ export function calculateTeamPoints(
     totalYellows += myYellowCards;
   }
 
-  // Yellow card pairs
-  breakdown.yellowCardPenalty = Math.floor(totalYellows / 2);
+  // Every 3 yellows = -1
+  breakdown.yellowCardPenalty = Math.floor(totalYellows / 3);
 
   // Advancement bonuses
   const stages = advancementMap[teamId] || [];
