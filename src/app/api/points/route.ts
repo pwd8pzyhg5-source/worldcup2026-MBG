@@ -31,17 +31,33 @@ export async function GET() {
 
   const hasLiveGames = (liveFixtures?.length ?? 0) > 0;
 
+  // Filter to fixtures that count toward standings
+  const countable = fixtures
+    .map((rawFixture) => liveById[rawFixture.fixture.id] ?? rawFixture)
+    .filter((fixture) => {
+      const status = fixture.fixture.status.short;
+      const finished = ["FT", "AET", "PEN"].includes(status);
+      const inProgress = ["1H", "HT", "2H", "ET", "P"].includes(status);
+      if (!finished && !inProgress) return false;
+      return !!TEAM_BY_API_ID[fixture.teams.home.id] && !!TEAM_BY_API_ID[fixture.teams.away.id];
+    });
+
+  // Fetch events for all qualifying fixtures in parallel — finished matches
+  // are cached for hours, only in-progress matches refresh fast
+  const eventsByFixture = await Promise.all(
+    countable.map((fixture) => {
+      const inProgress = ["1H", "HT", "2H", "ET", "P"].includes(fixture.fixture.status.short);
+      return getFixtureEvents(fixture.fixture.id, inProgress);
+    })
+  );
+
   // Build match results + advancement map from fixture data
   const results: MatchResult[] = [];
   const advancementMap: Record<string, string[]> = {};
 
-  for (const rawFixture of fixtures) {
-    // Use live data if available for this fixture (more up-to-date score)
-    const fixture = liveById[rawFixture.fixture.id] ?? rawFixture;
+  for (let idx = 0; idx < countable.length; idx++) {
+    const fixture = countable[idx];
     const status = fixture.fixture.status.short as MatchResult["status"];
-    const finished = ["FT", "AET", "PEN"].includes(status);
-    const inProgress = ["1H", "HT", "2H", "ET", "P"].includes(status);
-    if (!finished && !inProgress) continue;
 
     const homeTeam = TEAM_BY_API_ID[fixture.teams.home.id];
     const awayTeam = TEAM_BY_API_ID[fixture.teams.away.id];
@@ -49,9 +65,9 @@ export async function GET() {
 
     const stage = parseRound(fixture.league.round) as MatchResult["stage"];
 
-    // Fetch events for cards
+    // Tally cards
     let homeRed = 0, awayRed = 0, homeYellow = 0, awayYellow = 0;
-    const events = await getFixtureEvents(fixture.fixture.id);
+    const events = eventsByFixture[idx];
     if (events) {
       for (const ev of events) {
         const isHome = ev.team.id === fixture.teams.home.id;

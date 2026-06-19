@@ -5,18 +5,26 @@ const BASE_URL = "https://v3.football.api-sports.io";
 
 async function rawFetch(path: string) {
   const apiKey = process.env.API_FOOTBALL_KEY;
-  if (!apiKey) return null;
+  if (!apiKey) return { response: null, errors: "API_FOOTBALL_KEY not set", status: null };
   const res = await fetch(`${BASE_URL}${path}`, {
     headers: { "x-apisports-key": apiKey },
     cache: "no-store",
   });
   const json = await res.json();
-  return json.response;
+  return { response: json.response, errors: json.errors, status: res.status, results: json.results };
 }
 
 export async function GET() {
-  const fixtures = await rawFetch(`/fixtures?league=1&season=2026`);
-  if (!fixtures) return NextResponse.json({ error: "API_FOOTBALL_KEY not set or API unreachable" });
+  const raw = await rawFetch(`/fixtures?league=1&season=2026`);
+  if (!raw.response || raw.response.length === 0) {
+    return NextResponse.json({
+      error: "No fixtures returned",
+      httpStatus: raw.status,
+      apiErrors: raw.errors,
+      apiResults: raw.results,
+    });
+  }
+  const fixtures = raw.response;
 
   // Extract every unique team with its API ID
   const apiTeams: Record<number, { apiId: number; name: string; matched: boolean; ourId?: string }> = {};
