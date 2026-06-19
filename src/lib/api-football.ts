@@ -98,17 +98,18 @@ export interface APITopScorer {
   }>;
 }
 
-// 20 second TTL for live matches, 5 min for others
+// 60 second TTL for live matches, 5 min for others — kept conservative to
+// stay well under the daily API-Football request cap
 export const getFixtures = () =>
   apiFetch<APIFixture[]>(`/fixtures?league=${LEAGUE_ID}&season=${SEASON}`, 5 * 60 * 1000);
 
 export const getLiveFixtures = () =>
-  apiFetch<APIFixture[]>(`/fixtures?league=${LEAGUE_ID}&live=all`, 20 * 1000);
+  apiFetch<APIFixture[]>(`/fixtures?league=${LEAGUE_ID}&live=all`, 60 * 1000);
 
 // Finished matches' events never change — cache them for hours.
 // Only pass live=true for matches still in progress to get fast refresh.
 export const getFixtureEvents = (fixtureId: number, live: boolean = false) =>
-  apiFetch<APIEvent[]>(`/fixtures/events?fixture=${fixtureId}`, live ? 20 * 1000 : 6 * 60 * 60 * 1000);
+  apiFetch<APIEvent[]>(`/fixtures/events?fixture=${fixtureId}`, live ? 60 * 1000 : 6 * 60 * 60 * 1000);
 
 export const getStandings = () =>
   apiFetch<APIStandingEntry[][]>(`/standings?league=${LEAGUE_ID}&season=${SEASON}`, 2 * 60 * 1000);
