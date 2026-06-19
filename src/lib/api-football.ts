@@ -19,7 +19,7 @@ async function apiFetch<T>(
   const apiKey = process.env.API_FOOTBALL_KEY;
   if (!apiKey) {
     console.error("API_FOOTBALL_KEY not set");
-    return null;
+    return cache[key] ? (cache[key].data as T) : null;
   }
 
   try {
@@ -30,7 +30,8 @@ async function apiFetch<T>(
 
     if (!res.ok) {
       console.error(`API-Football error: ${res.status} ${path}`);
-      return null;
+      // Fall back to stale cache rather than showing nothing
+      return cache[key] ? (cache[key].data as T) : null;
     }
 
     const json = await res.json();
@@ -38,7 +39,8 @@ async function apiFetch<T>(
     return json.response as T;
   } catch (err) {
     console.error("API-Football fetch failed:", err);
-    return null;
+    // Fall back to stale cache rather than showing nothing
+    return cache[key] ? (cache[key].data as T) : null;
   }
 }
 
