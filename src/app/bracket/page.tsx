@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Flag from "@/components/Flag";
+import ParticipantAvatar from "@/components/ParticipantAvatar";
 import { TEAMS, TEAM_BY_ID, TEAM_BY_API_ID } from "../../../data/teams";
 
 interface StandingEntry {
@@ -111,7 +112,7 @@ export default function BracketPage() {
                               <span className="font-condensed" style={{ fontSize: 14, color: "var(--white)", fontWeight: 600 }}>
                                 {team.name}
                               </span>
-                              {owner && <span style={{ fontSize: 11, color: ownerColor, marginLeft: 2 }}>{owner[0]}</span>}
+                              {owner && <ParticipantAvatar name={owner} size={16} color={ownerColor} className="" />}
                             </div>
                           </td>
                           {[entry.all.played, entry.all.win, entry.all.draw, entry.all.lose, entry.goalsDiff >= 0 ? `+${entry.goalsDiff}` : entry.goalsDiff, entry.points].map((val, j) => (

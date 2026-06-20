@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Flag from "@/components/Flag";
+import ParticipantAvatar from "@/components/ParticipantAvatar";
 import { TEAM_BY_ID, TEAM_BY_API_ID } from "../../data/teams";
 
 interface ParticipantStanding {
@@ -193,13 +194,15 @@ export default function Home() {
                     </div>
                     {/* Owner + card summary row */}
                     {(homeOwner || awayOwner) && (
-                      <div className="font-condensed" style={{ display: "flex", gap: 8, fontSize: 11, marginBottom: goals.length ? 6 : 0 }}>
-                        <span style={{ flex: 1, textAlign: "right", color: homeOwner ? PARTICIPANT_COLORS[homeOwner] : "var(--muted)" }}>
-                          {homeOwner ?? "—"}{hasCards && cardSummary(homeYellows, homeReds) ? <span style={{ marginLeft: 5, opacity: 0.9 }}>{cardSummary(homeYellows, homeReds)}</span> : null}
+                      <div className="font-condensed" style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, marginBottom: goals.length ? 6 : 0 }}>
+                        <span style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 5, color: homeOwner ? PARTICIPANT_COLORS[homeOwner] : "var(--muted)" }}>
+                          {homeOwner ?? "—"}{hasCards && cardSummary(homeYellows, homeReds) ? <span style={{ opacity: 0.9 }}>{cardSummary(homeYellows, homeReds)}</span> : null}
+                          {homeOwner && <ParticipantAvatar name={homeOwner} size={18} color={PARTICIPANT_COLORS[homeOwner]} />}
                         </span>
                         <span style={{ minWidth: 40, textAlign: "center", color: "var(--muted)" }}>vs</span>
-                        <span style={{ flex: 1, color: awayOwner ? PARTICIPANT_COLORS[awayOwner] : "var(--muted)" }}>
-                          {hasCards && cardSummary(awayYellows, awayReds) ? <span style={{ marginRight: 5, opacity: 0.9 }}>{cardSummary(awayYellows, awayReds)}</span> : null}{awayOwner ?? "—"}
+                        <span style={{ flex: 1, display: "flex", alignItems: "center", gap: 5, color: awayOwner ? PARTICIPANT_COLORS[awayOwner] : "var(--muted)" }}>
+                          {awayOwner && <ParticipantAvatar name={awayOwner} size={18} color={PARTICIPANT_COLORS[awayOwner]} />}
+                          {hasCards && cardSummary(awayYellows, awayReds) ? <span style={{ opacity: 0.9 }}>{cardSummary(awayYellows, awayReds)}</span> : null}{awayOwner ?? "—"}
                         </span>
                       </div>
                     )}
@@ -286,10 +289,12 @@ export default function Home() {
                     </div>
                     {/* Owner matchup */}
                     {(homeOwner || awayOwner) && (
-                      <div className="font-condensed" style={{ fontSize: 11, color: "var(--muted)", whiteSpace: "nowrap" }}>
+                      <div className="font-condensed" style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "var(--muted)", whiteSpace: "nowrap" }}>
+                        {homeOwner && <ParticipantAvatar name={homeOwner} size={16} color={PARTICIPANT_COLORS[homeOwner]} />}
                         <span style={{ color: homeOwner ? PARTICIPANT_COLORS[homeOwner] : "var(--muted)" }}>{homeOwner ?? "—"}</span>
-                        <span style={{ margin: "0 4px" }}>vs</span>
+                        <span style={{ margin: "0 2px" }}>vs</span>
                         <span style={{ color: awayOwner ? PARTICIPANT_COLORS[awayOwner] : "var(--muted)" }}>{awayOwner ?? "—"}</span>
+                        {awayOwner && <ParticipantAvatar name={awayOwner} size={16} color={PARTICIPANT_COLORS[awayOwner]} />}
                       </div>
                     )}
                     {/* Time + venue */}
@@ -330,26 +335,13 @@ export default function Home() {
                 {standings.map((p, i) => {
                   const color = PARTICIPANT_COLORS[p.name] || "#666";
                   const isExpanded = expandedRoster === p.name;
-                  const photoSlug = p.name.toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-");
                   return (
                     <>
                       <tr key={p.name} className="standings-row" style={{ borderBottom: "1px solid rgba(255,255,255,0.04)", cursor: "pointer" }} onClick={() => setExpandedRoster(isExpanded ? null : p.name)}>
                         <td className="rank-cell" style={{ padding: "14px 10px" }}>{RANK_LABELS[i]}</td>
                         <td style={{ padding: "14px 10px" }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={`/images/participants/${photoSlug}.jpg`}
-                              alt=""
-                              width={32} height={32}
-                              style={{ borderRadius: "50%", objectFit: "cover", border: `2px solid ${color}`, flexShrink: 0 }}
-                              onError={(e) => {
-                                const el = e.target as HTMLImageElement;
-                                el.style.display = "none";
-                                (el.nextSibling as HTMLElement | null)?.style && ((el.nextSibling as HTMLElement).style.display = "block");
-                              }}
-                            />
-                            <div style={{ width: 5, height: 24, borderRadius: 3, background: color, flexShrink: 0, display: "none" }} />
+                            <ParticipantAvatar name={p.name} size={32} color={color} />
                             <span className="font-condensed" style={{ color: "var(--white)", fontSize: 16, fontWeight: 700 }}>{p.name}</span>
                             <span style={{ color: "var(--muted)", fontSize: 11 }}>{isExpanded ? "▲" : "▼"}</span>
                           </div>

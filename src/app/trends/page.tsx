@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { participantPhotoSlug } from "@/components/ParticipantAvatar";
 
 interface HistoryDay {
   date: string;
@@ -43,10 +44,10 @@ export default function TrendsPage() {
   }, []);
 
   // Chart geometry
-  const width = 900;
+  const width = 980;
   const height = 440;
   const padLeft = 130;
-  const padRight = 30;
+  const padRight = 110;
   const padTop = 30;
   const padBottom = 50;
   const plotW = width - padLeft - padRight;
@@ -138,9 +139,23 @@ export default function TrendsPage() {
                         strokeWidth={1.5}
                       />
                     ))}
-                    {/* End-of-line label */}
+                    {/* End-of-line avatar + label */}
+                    <clipPath id={`avatar-clip-${participantPhotoSlug(name)}`}>
+                      <circle cx={xFor(days - 1) + 22} cy={yFor(rankHistory[days - 1][name])} r={9} />
+                    </clipPath>
+                    <image
+                      href={`/images/participants/${participantPhotoSlug(name)}.png`}
+                      x={xFor(days - 1) + 13} y={yFor(rankHistory[days - 1][name]) - 9}
+                      width={18} height={18}
+                      clipPath={`url(#avatar-clip-${participantPhotoSlug(name)})`}
+                      preserveAspectRatio="xMidYMid slice"
+                    />
+                    <circle
+                      cx={xFor(days - 1) + 22} cy={yFor(rankHistory[days - 1][name])} r={9}
+                      fill="none" stroke={color} strokeWidth={1.5}
+                    />
                     <text
-                      x={xFor(days - 1) + 10}
+                      x={xFor(days - 1) + 36}
                       y={yFor(rankHistory[days - 1][name]) + 4}
                       fontSize={13}
                       fontWeight={700}
@@ -175,7 +190,13 @@ export default function TrendsPage() {
                 color: "var(--white)",
               }}
             >
-              <div style={{ width: 10, height: 10, borderRadius: "50%", background: PARTICIPANT_COLORS[name] }} />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={`/images/participants/${participantPhotoSlug(name)}.png`}
+                alt=""
+                width={18} height={18}
+                style={{ borderRadius: "50%", objectFit: "cover", border: `1.5px solid ${PARTICIPANT_COLORS[name]}`, flexShrink: 0 }}
+              />
               {name}
             </button>
           ))}
