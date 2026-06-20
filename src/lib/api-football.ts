@@ -106,21 +106,21 @@ export interface APITopScorer {
 // 60 second TTL for live matches, 5 min for others — kept conservative to
 // stay well under the daily API-Football request cap
 export const getFixtures = () =>
-  apiFetch<APIFixture[]>(`/fixtures?league=${LEAGUE_ID}&season=${SEASON}`, 300);
+  apiFetch<APIFixture[]>(`/fixtures?league=${LEAGUE_ID}&season=${SEASON}`, 600);
 
 export const getLiveFixtures = () =>
-  apiFetch<APIFixture[]>(`/fixtures?league=${LEAGUE_ID}&live=all`, 60);
+  apiFetch<APIFixture[]>(`/fixtures?league=${LEAGUE_ID}&live=all`, 90);
 
 // Finished matches' events never change — cache them for hours.
 // Only pass live=true for matches still in progress to get fast refresh.
 export const getFixtureEvents = (fixtureId: number, live: boolean = false) =>
-  apiFetch<APIEvent[]>(`/fixtures/events?fixture=${fixtureId}`, live ? 60 : 6 * 60 * 60);
+  apiFetch<APIEvent[]>(`/fixtures/events?fixture=${fixtureId}`, live ? 90 : 6 * 60 * 60);
 
 export const getStandings = () =>
-  apiFetch<APIStandingEntry[][]>(`/standings?league=${LEAGUE_ID}&season=${SEASON}`, 120);
+  apiFetch<APIStandingEntry[][]>(`/standings?league=${LEAGUE_ID}&season=${SEASON}`, 180);
 
 export const getTopScorers = () =>
-  apiFetch<APITopScorer[]>(`/players/topscorers?league=${LEAGUE_ID}&season=${SEASON}`, 600);
+  apiFetch<APITopScorer[]>(`/players/topscorers?league=${LEAGUE_ID}&season=${SEASON}`, 900);
 
 export function parseRound(round: string): string {
   if (round.includes("Group")) return "Group Stage";
