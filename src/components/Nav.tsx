@@ -7,6 +7,7 @@ const links = [
   { href: "/", label: "Leaderboard", short: "Board" },
   { href: "/draft", label: "Draft", short: "Draft" },
   { href: "/bracket", label: "Bracket", short: "Groups" },
+  { href: "/trends", label: "Trends", short: "Trends" },
   { href: "/stats", label: "Stats", short: "Stats" },
 ];
 
