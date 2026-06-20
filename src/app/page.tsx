@@ -38,6 +38,8 @@ const PARTICIPANT_COLORS: Record<string, string> = {
 };
 
 const RANK_LABELS = ["🥇", "🥈", "🥉", "4th", "5th", "6th"];
+const PARTICIPANTS = ["Gordo", "Shun", "Dr. Rick", "Sexy Tecsy", "Lazy Bones", "Bradical Bray"];
+type VoteChoice = "home" | "draw" | "away";
 
 export default function Home() {
   const [standings, setStandings] = useState<ParticipantStanding[]>([]);
@@ -49,6 +51,41 @@ export default function Home() {
   const [expandedRoster, setExpandedRoster] = useState<string | null>(null);
   const [apiIdOwner, setApiIdOwner] = useState<Record<number, string>>({});
   const [upcomingFixtures, setUpcomingFixtures] = useState<LiveFixture[]>([]);
+  const [votes, setVotes] = useState<Record<number, Record<string, VoteChoice>>>({});
+  const [myIdentity, setMyIdentity] = useState<string | null>(null);
+  const [showIdentityPicker, setShowIdentityPicker] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("wc26-identity");
+    if (saved && PARTICIPANTS.includes(saved)) setMyIdentity(saved);
+  }, []);
+
+  function chooseIdentity(name: string) {
+    localStorage.setItem("wc26-identity", name);
+    setMyIdentity(name);
+    setShowIdentityPicker(false);
+  }
+
+  async function fetchVotes(fixtureIds: number[]) {
+    if (fixtureIds.length === 0) return;
+    const res = await fetch(`/api/votes?fixtureIds=${fixtureIds.join(",")}`);
+    const data = await res.json();
+    setVotes(data.votes || {});
+  }
+
+  async function castVote(fixtureId: number, choice: VoteChoice, kickoff: string) {
+    if (!myIdentity) { setShowIdentityPicker(true); return; }
+    // Optimistic update
+    setVotes((prev) => ({
+      ...prev,
+      [fixtureId]: { ...(prev[fixtureId] || {}), [myIdentity]: choice },
+    }));
+    await fetch("/api/votes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fixtureId, participant: myIdentity, choice, kickoff }),
+    });
+  }
 
   async function refreshLive() {
     const [liveRes, pointsRes] = await Promise.all([
@@ -88,7 +125,9 @@ export default function Home() {
       }
       setApiIdOwner(idOwner);
       const upcomingData = await upcomingRes.json();
-      setUpcomingFixtures(upcomingData.fixtures || []);
+      const upcoming: LiveFixture[] = upcomingData.fixtures || [];
+      setUpcomingFixtures(upcoming);
+      fetchVotes(upcoming.map((f) => f.fixture.id));
       setLoading(false);
     }
     load();
@@ -262,44 +301,114 @@ export default function Home() {
         {/* Upcoming fixtures */}
         {!loading && upcomingFixtures.length > 0 && (
           <div className="card" style={{ padding: "12px 14px", marginBottom: 16 }}>
-            <div className="font-condensed" style={{ color: "var(--gold)", fontSize: 12, fontWeight: 700, letterSpacing: 1, marginBottom: 10 }}>UP NEXT</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
+              <div className="font-condensed" style={{ color: "var(--gold)", fontSize: 12, fontWeight: 700, letterSpacing: 1 }}>UP NEXT</div>
+              <div className="font-condensed" style={{ fontSize: 11, color: "var(--muted)", display: "flex", alignItems: "center", gap: 6 }}>
+                {myIdentity ? (
+                  <>
+                    Voting as <ParticipantAvatar name={myIdentity} size={16} color={PARTICIPANT_COLORS[myIdentity]} />
+                    <span style={{ color: PARTICIPANT_COLORS[myIdentity], fontWeight: 700 }}>{myIdentity}</span>
+                    <button onClick={() => setShowIdentityPicker(true)} style={{ background: "transparent", border: "none", color: "var(--muted)", textDecoration: "underline", cursor: "pointer", fontSize: 11, padding: 0 }}>change</button>
+                  </>
+                ) : (
+                  <button onClick={() => setShowIdentityPicker(true)} style={{ background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.3)", borderRadius: 6, color: "var(--gold)", cursor: "pointer", fontSize: 11, fontWeight: 700, padding: "4px 10px" }}>
+                    Set who you are to vote
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Identity picker */}
+            {showIdentityPicker && (
+              <div style={{ background: "rgba(255,255,255,0.04)", borderRadius: 8, padding: 10, marginBottom: 10, display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {PARTICIPANTS.map((name) => (
+                  <button
+                    key={name}
+                    onClick={() => chooseIdentity(name)}
+                    className="font-condensed"
+                    style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 10px", borderRadius: 6, background: "rgba(255,255,255,0.04)", border: `1px solid ${PARTICIPANT_COLORS[name]}55`, color: "var(--white)", cursor: "pointer", fontSize: 12, fontWeight: 600 }}
+                  >
+                    <ParticipantAvatar name={name} size={16} color={PARTICIPANT_COLORS[name]} />
+                    {name}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {upcomingFixtures.map((f) => {
                 const homeOwner = getOwner(f.teams.home.id);
                 const awayOwner = getOwner(f.teams.away.id);
                 const homeTeam = TEAM_BY_API_ID[f.teams.home.id];
                 const awayTeam = TEAM_BY_API_ID[f.teams.away.id];
-                const kickoff = new Date(f.fixture.date);
-                const dateLabel = kickoff.toLocaleDateString("en-CA", { weekday: "short", month: "short", day: "numeric" });
-                const timeLabel = kickoff.toLocaleTimeString("en-CA", { hour: "numeric", minute: "2-digit" });
-                return (
-                  <div key={f.fixture.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", background: "rgba(255,255,255,0.03)", borderRadius: 8, flexWrap: "wrap" }}>
-                    {/* Teams + score placeholder */}
-                    <div className="font-condensed" style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 180 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                        {homeTeam && <Flag code={homeTeam.code} size={16} />}
-                        <span style={{ color: homeOwner ? PARTICIPANT_COLORS[homeOwner] : "var(--white)", fontWeight: 700, fontSize: 13 }}>{f.teams.home.name}</span>
+                const kickoffDate = new Date(f.fixture.date);
+                const dateLabel = kickoffDate.toLocaleDateString("en-CA", { weekday: "short", month: "short", day: "numeric" });
+                const timeLabel = kickoffDate.toLocaleTimeString("en-CA", { hour: "numeric", minute: "2-digit" });
+                const fixtureVotes = votes[f.fixture.id] || {};
+                const myVote = myIdentity ? fixtureVotes[myIdentity] : undefined;
+                const votersFor = (choice: VoteChoice) => Object.entries(fixtureVotes).filter(([, v]) => v === choice).map(([name]) => name);
+
+                const choiceButton = (choice: VoteChoice, label: string) => {
+                  const voters = votersFor(choice);
+                  const isMine = myVote === choice;
+                  return (
+                    <button
+                      onClick={() => castVote(f.fixture.id, choice, f.fixture.date)}
+                      className="font-condensed"
+                      style={{
+                        flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+                        padding: "6px 4px", borderRadius: 6, cursor: "pointer",
+                        background: isMine ? "rgba(201,168,76,0.15)" : "rgba(255,255,255,0.03)",
+                        border: isMine ? "1px solid var(--gold)" : "1px solid rgba(255,255,255,0.08)",
+                        minWidth: 0,
+                      }}
+                    >
+                      <span style={{ fontSize: 11, fontWeight: 700, color: isMine ? "var(--gold)" : "var(--white)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>{label}</span>
+                      <div style={{ display: "flex", gap: 2, minHeight: 16 }}>
+                        {voters.map((name) => (
+                          <ParticipantAvatar key={name} name={name} size={16} color={PARTICIPANT_COLORS[name]} />
+                        ))}
                       </div>
-                      <span style={{ color: "var(--muted)", fontSize: 12 }}>vs</span>
-                      <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                        {awayTeam && <Flag code={awayTeam.code} size={16} />}
-                        <span style={{ color: awayOwner ? PARTICIPANT_COLORS[awayOwner] : "var(--white)", fontWeight: 700, fontSize: 13 }}>{f.teams.away.name}</span>
+                    </button>
+                  );
+                };
+
+                return (
+                  <div key={f.fixture.id} style={{ padding: "8px 10px", background: "rgba(255,255,255,0.03)", borderRadius: 8 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                      {/* Teams */}
+                      <div className="font-condensed" style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 180 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                          {homeTeam && <Flag code={homeTeam.code} size={16} />}
+                          <span style={{ color: homeOwner ? PARTICIPANT_COLORS[homeOwner] : "var(--white)", fontWeight: 700, fontSize: 13 }}>{f.teams.home.name}</span>
+                        </div>
+                        <span style={{ color: "var(--muted)", fontSize: 12 }}>vs</span>
+                        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                          {awayTeam && <Flag code={awayTeam.code} size={16} />}
+                          <span style={{ color: awayOwner ? PARTICIPANT_COLORS[awayOwner] : "var(--white)", fontWeight: 700, fontSize: 13 }}>{f.teams.away.name}</span>
+                        </div>
+                      </div>
+                      {/* Owner matchup */}
+                      {(homeOwner || awayOwner) && (
+                        <div className="font-condensed" style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "var(--muted)", whiteSpace: "nowrap" }}>
+                          {homeOwner && <ParticipantAvatar name={homeOwner} size={16} color={PARTICIPANT_COLORS[homeOwner]} />}
+                          <span style={{ color: homeOwner ? PARTICIPANT_COLORS[homeOwner] : "var(--muted)" }}>{homeOwner ?? "—"}</span>
+                          <span style={{ margin: "0 2px" }}>vs</span>
+                          <span style={{ color: awayOwner ? PARTICIPANT_COLORS[awayOwner] : "var(--muted)" }}>{awayOwner ?? "—"}</span>
+                          {awayOwner && <ParticipantAvatar name={awayOwner} size={16} color={PARTICIPANT_COLORS[awayOwner]} />}
+                        </div>
+                      )}
+                      {/* Time + venue */}
+                      <div className="font-condensed" style={{ fontSize: 11, color: "var(--muted)", textAlign: "right", whiteSpace: "nowrap" }}>
+                        <span style={{ color: "var(--white)", fontWeight: 600 }}>{dateLabel} · {timeLabel}</span>
+                        {f.fixture.venue?.name && <><br /><span style={{ opacity: 0.6 }}>📍 {f.fixture.venue.name}, {f.fixture.venue.city}</span></>}
                       </div>
                     </div>
-                    {/* Owner matchup */}
-                    {(homeOwner || awayOwner) && (
-                      <div className="font-condensed" style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "var(--muted)", whiteSpace: "nowrap" }}>
-                        {homeOwner && <ParticipantAvatar name={homeOwner} size={16} color={PARTICIPANT_COLORS[homeOwner]} />}
-                        <span style={{ color: homeOwner ? PARTICIPANT_COLORS[homeOwner] : "var(--muted)" }}>{homeOwner ?? "—"}</span>
-                        <span style={{ margin: "0 2px" }}>vs</span>
-                        <span style={{ color: awayOwner ? PARTICIPANT_COLORS[awayOwner] : "var(--muted)" }}>{awayOwner ?? "—"}</span>
-                        {awayOwner && <ParticipantAvatar name={awayOwner} size={16} color={PARTICIPANT_COLORS[awayOwner]} />}
-                      </div>
-                    )}
-                    {/* Time + venue */}
-                    <div className="font-condensed" style={{ fontSize: 11, color: "var(--muted)", textAlign: "right", whiteSpace: "nowrap" }}>
-                      <span style={{ color: "var(--white)", fontWeight: 600 }}>{dateLabel} · {timeLabel}</span>
-                      {f.fixture.venue?.name && <><br /><span style={{ opacity: 0.6 }}>📍 {f.fixture.venue.name}, {f.fixture.venue.city}</span></>}
+                    {/* Voting */}
+                    <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+                      {choiceButton("home", f.teams.home.name)}
+                      {choiceButton("draw", "Draw")}
+                      {choiceButton("away", f.teams.away.name)}
                     </div>
                   </div>
                 );
