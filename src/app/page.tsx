@@ -92,9 +92,8 @@ export default function Home() {
       setLoading(false);
     }
     load();
-    // Poll every 3 min — refreshes both live scores and standings.
-    // Kept conservative to stay under the API-Football daily request cap.
-    const interval = setInterval(refreshLive, 3 * 60 * 1000);
+    // Poll every 2 min — refreshes both live scores and standings.
+    const interval = setInterval(refreshLive, 2 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 

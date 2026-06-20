@@ -120,7 +120,7 @@ export const getStandings = () =>
   apiFetch<APIStandingEntry[][]>(`/standings?league=${LEAGUE_ID}&season=${SEASON}`, 300);
 
 export const getTopScorers = () =>
-  apiFetch<APITopScorer[]>(`/players/topscorers?league=${LEAGUE_ID}&season=${SEASON}`, 1200);
+  apiFetch<APITopScorer[]>(`/players/topscorers?league=${LEAGUE_ID}&season=${SEASON}`, 60 * 60);
 
 export function parseRound(round: string): string {
   if (round.includes("Group")) return "Group Stage";
