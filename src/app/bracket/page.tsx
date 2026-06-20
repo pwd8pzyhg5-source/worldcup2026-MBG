@@ -41,7 +41,7 @@ export default function BracketPage() {
       });
     }
     refresh(true);
-    const interval = setInterval(() => refresh(false), 2 * 60 * 1000);
+    const interval = setInterval(() => refresh(false), 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 
