@@ -49,15 +49,18 @@ export async function GET() {
       return !!TEAM_BY_API_ID[fixture.teams.home.id] && !!TEAM_BY_API_ID[fixture.teams.away.id];
     });
 
-  // Events TTL: fast refresh while live; for finished matches, a short
-  // window for the first few hours (catches late VAR-confirmed cards) then
-  // a long window once the match is old enough that corrections are very
-  // unlikely. See getFixtureEvents in api-football.ts for why this matters.
+  // Events TTL: fast refresh while live. Once finished, a moderate window
+  // for ~2.5 hours post-kickoff (covers full match length + a settle buffer
+  // for late VAR-confirmed cards), then a long window once corrections are
+  // very unlikely. Kept wide (45min, not 15min) specifically to minimize
+  // how many times a finished match's total can still visibly change —
+  // frequent small refreshes were producing unexplained-looking point
+  // swings even though each one reflected a real, if late, data correction.
   function eventsTtlFor(fixture: (typeof countable)[number]): number {
     const status = fixture.fixture.status.short;
     if (IN_PROGRESS_STATUSES.includes(status)) return 180;
     const hoursSinceKickoff = (Date.now() - new Date(fixture.fixture.date).getTime()) / (60 * 60 * 1000);
-    return hoursSinceKickoff < 4 ? 900 : 6 * 60 * 60;
+    return hoursSinceKickoff < 2.5 ? 45 * 60 : 6 * 60 * 60;
   }
 
   const eventsByFixture = await Promise.all(
