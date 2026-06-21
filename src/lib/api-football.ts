@@ -111,10 +111,16 @@ export const getFixtures = () =>
 export const getLiveFixtures = () =>
   apiFetch<APIFixture[]>(`/fixtures?league=${LEAGUE_ID}&live=all`, 180);
 
-// Finished matches' events never change — cache them for hours.
-// Only pass live=true for matches still in progress to get fast refresh.
-export const getFixtureEvents = (fixtureId: number, live: boolean = false) =>
-  apiFetch<APIEvent[]>(`/fixtures/events?fixture=${fixtureId}`, live ? 180 : 6 * 60 * 60);
+// Live matches refresh fast. Finished matches settle into a long cache
+// since their events truly never change — but API-Football sometimes
+// finalizes VAR-confirmed cards a few minutes after full time, so a
+// freshly-finished match still gets a short TTL for a while before
+// graduating to the long one. Without this, an incomplete events list
+// cached right at full time could sit "wrong" for up to 6 hours, then
+// jump all at once when it finally refreshes — looking like a random
+// point swing even though it's a legitimate late correction.
+export const getFixtureEvents = (fixtureId: number, ttlSeconds: number) =>
+  apiFetch<APIEvent[]>(`/fixtures/events?fixture=${fixtureId}`, ttlSeconds);
 
 export const getStandings = () =>
   apiFetch<APIStandingEntry[][]>(`/standings?league=${LEAGUE_ID}&season=${SEASON}`, 300);

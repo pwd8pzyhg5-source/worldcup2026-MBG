@@ -31,7 +31,7 @@ export async function GET(req: Request) {
   // Fetch events for each live fixture in parallel
   const withEvents = await Promise.all(
     data.map(async (fixture) => {
-      const events = await getFixtureEvents(fixture.fixture.id, true);
+      const events = await getFixtureEvents(fixture.fixture.id, 180);
       return { ...fixture, events: events ?? [] };
     })
   );

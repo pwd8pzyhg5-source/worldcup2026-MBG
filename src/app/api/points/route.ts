@@ -49,13 +49,19 @@ export async function GET() {
       return !!TEAM_BY_API_ID[fixture.teams.home.id] && !!TEAM_BY_API_ID[fixture.teams.away.id];
     });
 
-  // Fetch events for all qualifying fixtures in parallel — finished matches
-  // are cached for hours, only in-progress matches refresh fast
+  // Events TTL: fast refresh while live; for finished matches, a short
+  // window for the first few hours (catches late VAR-confirmed cards) then
+  // a long window once the match is old enough that corrections are very
+  // unlikely. See getFixtureEvents in api-football.ts for why this matters.
+  function eventsTtlFor(fixture: (typeof countable)[number]): number {
+    const status = fixture.fixture.status.short;
+    if (IN_PROGRESS_STATUSES.includes(status)) return 180;
+    const hoursSinceKickoff = (Date.now() - new Date(fixture.fixture.date).getTime()) / (60 * 60 * 1000);
+    return hoursSinceKickoff < 4 ? 900 : 6 * 60 * 60;
+  }
+
   const eventsByFixture = await Promise.all(
-    countable.map((fixture) => {
-      const inProgress = IN_PROGRESS_STATUSES.includes(fixture.fixture.status.short);
-      return getFixtureEvents(fixture.fixture.id, inProgress);
-    })
+    countable.map((fixture) => getFixtureEvents(fixture.fixture.id, eventsTtlFor(fixture)))
   );
 
   // Build match results + advancement map from fixture data

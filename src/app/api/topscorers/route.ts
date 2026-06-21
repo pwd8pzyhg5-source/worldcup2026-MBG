@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getTopScorers, getFixtures, getFixtureEvents } from "@/lib/api-football";
+import { getTopScorers, getFixtures } from "@/lib/api-football";
 import { TEAM_BY_API_ID } from "../../../../data/teams";
 
 export async function GET() {
