@@ -4,6 +4,13 @@ import { getFixtures, getLiveFixtures, getFixtureEvents, parseRound } from "@/li
 import { calculateStandings, MatchResult } from "@/lib/points";
 import { TEAM_BY_API_ID } from "../../../../data/teams";
 
+// Statuses that mean "match is genuinely over" vs "match is underway in some
+// form, even mid-stoppage/VAR-check/suspension". A status falling into
+// neither set used to silently drop the fixture from standings entirely —
+// that's what caused points to swing up and down with no real match event.
+const FINISHED_STATUSES = ["FT", "AET", "PEN", "WO", "AWD"];
+const IN_PROGRESS_STATUSES = ["1H", "HT", "2H", "ET", "P", "BT", "SUSP", "INT", "LIVE"];
+
 export async function GET() {
   const draft = readDraft();
 
@@ -36,8 +43,8 @@ export async function GET() {
     .map((rawFixture) => liveById[rawFixture.fixture.id] ?? rawFixture)
     .filter((fixture) => {
       const status = fixture.fixture.status.short;
-      const finished = ["FT", "AET", "PEN"].includes(status);
-      const inProgress = ["1H", "HT", "2H", "ET", "P"].includes(status);
+      const finished = FINISHED_STATUSES.includes(status);
+      const inProgress = IN_PROGRESS_STATUSES.includes(status);
       if (!finished && !inProgress) return false;
       return !!TEAM_BY_API_ID[fixture.teams.home.id] && !!TEAM_BY_API_ID[fixture.teams.away.id];
     });
@@ -46,7 +53,7 @@ export async function GET() {
   // are cached for hours, only in-progress matches refresh fast
   const eventsByFixture = await Promise.all(
     countable.map((fixture) => {
-      const inProgress = ["1H", "HT", "2H", "ET", "P"].includes(fixture.fixture.status.short);
+      const inProgress = IN_PROGRESS_STATUSES.includes(fixture.fixture.status.short);
       return getFixtureEvents(fixture.fixture.id, inProgress);
     })
   );

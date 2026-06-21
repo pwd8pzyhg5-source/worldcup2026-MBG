@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { getFixtures, getLiveFixtures } from "@/lib/api-football";
 import { TEAMS, TEAM_BY_API_ID } from "../../../../data/teams";
 
+// Keep in sync with api/points/route.ts — a status falling into neither set
+// used to silently drop the fixture from the group table entirely.
+const COUNTABLE_STATUSES = ["FT", "AET", "PEN", "WO", "AWD", "1H", "HT", "2H", "ET", "P", "BT", "SUSP", "INT", "LIVE"];
+
 interface StandingEntry {
   rank: number;
   team: { id: number; name: string; logo: string };
@@ -52,7 +56,7 @@ export async function GET() {
   for (const raw of fixtures) {
     const f = liveById[raw.fixture.id] ?? raw;
     const status = f.fixture.status.short;
-    const countable = ["FT", "AET", "PEN", "1H", "HT", "2H", "ET", "P"].includes(status);
+    const countable = COUNTABLE_STATUSES.includes(status);
     if (!countable) continue;
     if (!f.league.round.includes("Group")) continue;
 
