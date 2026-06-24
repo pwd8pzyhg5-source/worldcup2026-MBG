@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { readDraft } from "@/lib/draft";
-import { getFixtures, getLiveFixtures, getFixtureEvents, parseRound } from "@/lib/api-football";
+import { getFinishedFixtures, getFixtures, getLiveFixtures, getFixtureEvents, parseRound } from "@/lib/api-football";
 import { calculateStandings, MatchResult } from "@/lib/points";
 import { TEAM_BY_API_ID } from "../../../../data/teams";
 
@@ -25,23 +25,50 @@ export async function GET() {
     return NextResponse.json({ standings, draftCompleted: false });
   }
 
-  const [fixtures, liveFixtures] = await Promise.all([getFixtures(), getLiveFixtures()]);
-  if (!fixtures) {
+  // Fetch finished fixtures separately from live — this is the key stability fix.
+  // getFinishedFixtures only returns FT/AET/PEN/WO/AWD fixtures, so its cache
+  // never contains mid-match data (a score frozen mid-game that looks wrong).
+  // getFixtures (all) is still fetched but only used as a fallback if the
+  // finished-specific endpoint returns nothing.
+  const [finishedFixtures, allFixtures, liveFixtures] = await Promise.all([
+    getFinishedFixtures(),
+    getFixtures(),
+    getLiveFixtures(),
+  ]);
+
+  // Use finished fixtures as the authoritative base. Fall back to all fixtures
+  // (filtering to finished) only if the status-filtered endpoint fails.
+  const baseFinished: typeof finishedFixtures =
+    finishedFixtures && finishedFixtures.length > 0
+      ? finishedFixtures
+      : (allFixtures ?? []).filter((f) => FINISHED_STATUSES.includes(f.fixture.status.short));
+
+  if (!baseFinished && !liveFixtures) {
     return NextResponse.json({ error: "API unavailable", standings: [], draftCompleted: true });
   }
 
-  // Merge live fixture data into full fixture list so in-progress scores are current
-  const liveById: Record<number, typeof liveFixtures extends (infer T)[] | null ? T : never> = {};
+  // Build a map from fixture ID to the authoritative live fixture data.
+  const liveById: Record<number, NonNullable<typeof liveFixtures>[number]> = {};
   if (liveFixtures) {
     for (const lf of liveFixtures) liveById[lf.fixture.id] = lf;
   }
 
   const hasLiveGames = (liveFixtures?.length ?? 0) > 0;
 
-  // Filter to fixtures that count toward standings
-  const countable = fixtures
-    .map((rawFixture) => liveById[rawFixture.fixture.id] ?? rawFixture)
-    .filter((fixture) => {
+  // Countable = all finished fixtures + all currently live fixtures.
+  // Finished fixtures use stable final scores; live fixtures use current scores.
+  // We never mix: a finished fixture score will not be overridden by a live entry
+  // because live fixtures are for in-progress games only.
+  const finishedById = new Map((baseFinished ?? []).map((f) => [f.fixture.id, f]));
+  const liveList = liveFixtures ?? [];
+
+  // Merge: start with finished, add any live games not already in finished
+  const merged = [
+    ...(baseFinished ?? []),
+    ...liveList.filter((lf) => !finishedById.has(lf.fixture.id)),
+  ];
+
+  const countable = merged.filter((fixture) => {
       const status = fixture.fixture.status.short;
       const finished = FINISHED_STATUSES.includes(status);
       const inProgress = IN_PROGRESS_STATUSES.includes(status);

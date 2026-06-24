@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { getFixtures, getLiveFixtures } from "@/lib/api-football";
-import { TEAMS, TEAM_BY_API_ID } from "../../../../data/teams";
+import { getFinishedFixtures, getFixtures, getLiveFixtures } from "@/lib/api-football";
+import { TEAMS } from "../../../../data/teams";
 
 // Keep in sync with api/points/route.ts — a status falling into neither set
 // used to silently drop the fixture from the group table entirely.
@@ -27,18 +27,33 @@ type TeamStats = {
   ga: number;
 };
 
-export async function GET() {
-  const [fixtures, liveFixtures] = await Promise.all([getFixtures(), getLiveFixtures()]);
+// FINISHED_STATUSES kept in sync with points/route.ts
+const FINISHED_STATUSES = ["FT", "AET", "PEN", "WO", "AWD"];
 
-  if (!fixtures) {
+export async function GET() {
+  const [finishedFixtures, allFixtures, liveFixtures] = await Promise.all([
+    getFinishedFixtures(),
+    getFixtures(),
+    getLiveFixtures(),
+  ]);
+
+  const baseFinished: typeof finishedFixtures =
+    finishedFixtures && finishedFixtures.length > 0
+      ? finishedFixtures
+      : (allFixtures ?? []).filter((f) => FINISHED_STATUSES.includes(f.fixture.status.short));
+
+  if (!baseFinished && !liveFixtures) {
     return NextResponse.json({ error: "API unavailable", standings: [] }, { status: 200 });
   }
 
-  // Merge live data so in-progress scores are current
-  const liveById: Record<number, (typeof liveFixtures extends (infer T)[] | null ? T : never)> = {};
-  if (liveFixtures) {
-    for (const lf of liveFixtures) liveById[lf.fixture.id] = lf;
-  }
+  const finishedById = new Map((baseFinished ?? []).map((f) => [f.fixture.id, f]));
+  const liveList = liveFixtures ?? [];
+
+  // Merge: finished (stable scores) + live games not already finished
+  const fixtures = [
+    ...(baseFinished ?? []),
+    ...liveList.filter((lf) => !finishedById.has(lf.fixture.id)),
+  ];
 
   // Seed every team with zero stats so all 4 show even before they play
   const statsByApiId: Record<number, TeamStats> = {};
@@ -53,8 +68,7 @@ export async function GET() {
   }
 
   // Accumulate results from all group stage matches (finished or in-progress)
-  for (const raw of fixtures) {
-    const f = liveById[raw.fixture.id] ?? raw;
+  for (const f of fixtures) {
     const status = f.fixture.status.short;
     const countable = COUNTABLE_STATUSES.includes(status);
     if (!countable) continue;
@@ -122,9 +136,6 @@ export async function GET() {
   const standings = Object.keys(groupMap)
     .sort()
     .map((g) => groupMap[g]);
-
-  // Validate: if no teams reference TEAM_BY_API_ID it means we have the right data
-  void TEAM_BY_API_ID;
 
   return NextResponse.json({ standings, lastUpdated: new Date().toISOString() });
 }

@@ -2,18 +2,18 @@ const BASE_URL = "https://v3.football.api-sports.io";
 const LEAGUE_ID = 1;
 const SEASON = 2026;
 
-// Fallback snapshot used only when a fetch genuinely errors (rate limit,
-// network failure, API error payload) — NOT the primary cache. The
-// primary cache is Next.js's Data Cache via `next: { revalidate }` below,
-// which is shared across all serverless instances/regions. Using
-// cache: "no-store" here would disable that shared cache entirely and
-// force every cold instance to hit the real API regardless of TTL —
-// that was the actual cause of exhausting the daily request quota.
+// Shared persistent fallback — used ONLY when the live API fetch errors
+// (rate limit, network failure, API error payload). NOT the primary cache.
+// Primary cache is Next.js Data Cache via `next: { revalidate, tags }`.
+//
+// Cache tags let us call revalidateTag("fixtures") from an admin endpoint
+// to force-bust all fixture caches at once when data looks stale.
 const lastGood: Record<string, unknown> = {};
 
 async function apiFetch<T>(
   path: string,
-  revalidateSeconds: number = 300
+  revalidateSeconds: number = 300,
+  tags: string[] = []
 ): Promise<T | null> {
   const apiKey = process.env.API_FOOTBALL_KEY;
   if (!apiKey) {
@@ -24,7 +24,7 @@ async function apiFetch<T>(
   try {
     const res = await fetch(`${BASE_URL}${path}`, {
       headers: { "x-apisports-key": apiKey },
-      next: { revalidate: revalidateSeconds },
+      next: { revalidate: revalidateSeconds, tags },
     });
 
     if (!res.ok) {
@@ -103,30 +103,58 @@ export interface APITopScorer {
   }>;
 }
 
-// 60 second TTL for live matches, 5 min for others — kept conservative to
-// stay well under the daily API-Football request cap
+// All WC 2026 fixtures — used for upcoming fixtures display (NS status).
+// 300s TTL: short enough that newly-scheduled or postponed matches appear quickly.
+// Tagged "fixtures" so we can force-bust from /api/admin/refresh.
 export const getFixtures = () =>
-  apiFetch<APIFixture[]>(`/fixtures?league=${LEAGUE_ID}&season=${SEASON}`, 900);
+  apiFetch<APIFixture[]>(
+    `/fixtures?league=${LEAGUE_ID}&season=${SEASON}`,
+    300,
+    ["fixtures"]
+  );
 
+// Currently live fixtures — lowest possible TTL for real-time scores.
+// Tagged "fixtures" to be included in manual refresh.
 export const getLiveFixtures = () =>
-  apiFetch<APIFixture[]>(`/fixtures?league=${LEAGUE_ID}&live=all`, 180);
+  apiFetch<APIFixture[]>(
+    `/fixtures?league=${LEAGUE_ID}&live=all`,
+    60,
+    ["fixtures"]
+  );
 
-// Live matches refresh fast. Finished matches settle into a long cache
-// since their events truly never change — but API-Football sometimes
-// finalizes VAR-confirmed cards a few minutes after full time, so a
-// freshly-finished match still gets a short TTL for a while before
-// graduating to the long one. Without this, an incomplete events list
-// cached right at full time could sit "wrong" for up to 6 hours, then
-// jump all at once when it finally refreshes — looking like a random
-// point swing even though it's a legitimate late correction.
+// Finished fixtures only — these have stable final scores.
+// Much longer cache than getFixtures: a finished score never changes.
+// We keep 300s as a safety margin in case API corrections trickle in.
+// Tagged "fixtures-finished" — busted separately since it's slower to refresh.
+export const getFinishedFixtures = () =>
+  apiFetch<APIFixture[]>(
+    `/fixtures?league=${LEAGUE_ID}&season=${SEASON}&status=FT-AET-PEN-WO-AWD`,
+    300,
+    ["fixtures", "fixtures-finished"]
+  );
+
+// Per-fixture event stream — cards only relevant data here; goals come from
+// the fixture score itself. TTL is passed by caller based on match state.
 export const getFixtureEvents = (fixtureId: number, ttlSeconds: number) =>
-  apiFetch<APIEvent[]>(`/fixtures/events?fixture=${fixtureId}`, ttlSeconds);
+  apiFetch<APIEvent[]>(
+    `/fixtures/events?fixture=${fixtureId}`,
+    ttlSeconds,
+    ["fixtures", `fixture-events-${fixtureId}`]
+  );
 
 export const getStandings = () =>
-  apiFetch<APIStandingEntry[][]>(`/standings?league=${LEAGUE_ID}&season=${SEASON}`, 300);
+  apiFetch<APIStandingEntry[][]>(
+    `/standings?league=${LEAGUE_ID}&season=${SEASON}`,
+    300,
+    ["fixtures"]
+  );
 
 export const getTopScorers = () =>
-  apiFetch<APITopScorer[]>(`/players/topscorers?league=${LEAGUE_ID}&season=${SEASON}`, 60 * 60);
+  apiFetch<APITopScorer[]>(
+    `/players/topscorers?league=${LEAGUE_ID}&season=${SEASON}`,
+    60 * 60,
+    ["topscorers"]
+  );
 
 export function parseRound(round: string): string {
   if (round.includes("Group")) return "Group Stage";

@@ -102,12 +102,34 @@
     {
       "date": "2026-06-20",
       "points": {
-        "Sexy Tecsy": 41,
-        "Dr. Rick": 37,
-        "Gordo": 36,
-        "Lazy Bones": 35,
-        "Shun": 25,
-        "Bradical Bray": 22
+        "Dr. Rick": 6,
+        "Lazy Bones": 5,
+        "Gordo": 4,
+        "Sexy Tecsy": 3,
+        "Shun": 2,
+        "Bradical Bray": 1
+      }
+    },
+    {
+      "date": "2026-06-21",
+      "points": {
+        "Dr. Rick": 6,
+        "Gordo": 5,
+        "Lazy Bones": 4,
+        "Sexy Tecsy": 3,
+        "Shun": 2,
+        "Bradical Bray": 1
+      }
+    },
+    {
+      "date": "2026-06-22",
+      "points": {
+        "Dr. Rick": 6,
+        "Gordo": 5,
+        "Lazy Bones": 4,
+        "Sexy Tecsy": 3,
+        "Shun": 2,
+        "Bradical Bray": 1
       }
     }
   ]
