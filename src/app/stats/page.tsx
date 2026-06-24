@@ -58,6 +58,7 @@ const PARTICIPANT_COLORS: Record<string, string> = {
 
 export default function StatsPage() {
   const [scorers, setScorers] = useState<TopScorer[]>([]);
+  const [assistLeaders, setAssistLeaders] = useState<TopScorer[]>([]);
   const [cleanSheets, setCleanSheets] = useState<CleanSheetEntry[]>([]);
   const [upsets, setUpsets] = useState<UpsetEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,6 +71,13 @@ export default function StatsPage() {
       fetch("/api/points").then((r) => r.json()),
     ]).then(([scorerData, pointsData]) => {
       setScorers(scorerData.scorers || []);
+      // Use the dedicated top-assists endpoint data, sorted by assists descending
+      const rawAssists: TopScorer[] = scorerData.assists || [];
+      setAssistLeaders(
+        [...rawAssists].sort(
+          (a, b) => (b.statistics[0]?.goals?.assists ?? 0) - (a.statistics[0]?.goals?.assists ?? 0)
+        )
+      );
       setCleanSheets(scorerData.cleanSheets || []);
       setLastUpdated(scorerData.lastUpdated);
 
@@ -108,11 +116,6 @@ export default function StatsPage() {
     { key: "cleansheets", label: "Clean Sheets", emoji: "🧤" },
     { key: "upsets", label: "Upsets", emoji: "🔥" },
   ];
-
-  // Sort assist leaders from scorer data
-  const assistLeaders = [...scorers].sort(
-    (a, b) => (b.statistics[0]?.goals?.assists ?? 0) - (a.statistics[0]?.goals?.assists ?? 0)
-  );
 
   return (
     <div style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 16px" }}>
@@ -212,7 +215,6 @@ export default function StatsPage() {
                 {assistLeaders.slice(0, 20).map((s, i) => {
                   const stat = s.statistics[0];
                   const assists = stat?.goals?.assists ?? 0;
-                  if (assists === 0 && i > 0) return null;
                   return (
                     <tr key={s.player.id} style={{ borderBottom: i < 19 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
                       <td style={{ padding: "12px 16px", textAlign: "center", color: i < 3 ? "var(--gold)" : "var(--muted)", fontWeight: 700, fontSize: 14 }}>{i + 1}</td>

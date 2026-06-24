@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
-import { getTopScorers, getFixtures } from "@/lib/api-football";
+import { getTopScorers, getTopAssists, getFinishedFixtures } from "@/lib/api-football";
 import { TEAM_BY_API_ID } from "../../../../data/teams";
 
 export async function GET() {
-  const [scorers, fixtures] = await Promise.all([
+  const [scorers, assists, fixtures] = await Promise.all([
     getTopScorers(),
-    getFixtures(),
+    getTopAssists(),
+    getFinishedFixtures(),
   ]);
 
   // Build clean sheet counts per team from completed fixtures
@@ -14,7 +15,7 @@ export async function GET() {
   if (fixtures) {
     for (const f of fixtures) {
       const status = f.fixture.status.short;
-      if (!["FT", "AET", "PEN"].includes(status)) continue;
+      if (!["FT", "AET", "PEN", "WO", "AWD"].includes(status)) continue;
 
       const homeGoals = f.goals.home ?? 0;
       const awayGoals = f.goals.away ?? 0;
@@ -39,6 +40,7 @@ export async function GET() {
 
   return NextResponse.json({
     scorers: scorers || [],
+    assists: assists || [],
     cleanSheets: cleanSheetsList,
     lastUpdated: new Date().toISOString(),
   });

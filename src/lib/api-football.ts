@@ -156,6 +156,13 @@ export const getTopScorers = () =>
     ["topscorers"]
   );
 
+export const getTopAssists = () =>
+  apiFetch<APITopScorer[]>(
+    `/players/topassists?league=${LEAGUE_ID}&season=${SEASON}`,
+    60 * 60,
+    ["topscorers"]
+  );
+
 export function parseRound(round: string): string {
   if (round.includes("Group")) return "Group Stage";
   if (round.includes("32")) return "Round of 32";
