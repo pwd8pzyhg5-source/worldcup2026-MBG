@@ -83,11 +83,16 @@ export async function GET() {
     if (!homeTeam || !awayTeam) continue;
 
     let homeYellows = 0, awayYellows = 0, homeReds = 0, awayReds = 0;
-    for (const ev of (eventsByFixtureId[f.fixture.id] ?? []) as Array<{ team: { id: number }; type: string; detail: string }>) {
+    const seenDismissals = new Set<string>();
+    for (const ev of (eventsByFixtureId[f.fixture.id] ?? []) as Array<{ time: { elapsed: number }; team: { id: number }; player: { name: string }; type: string; detail: string }>) {
       const isHome = ev.team.id === f.teams.home.id;
       if (ev.type === "Card") {
         if (ev.detail === "Red Card" || ev.detail === "Second Yellow Card") {
-          if (isHome) homeReds++; else awayReds++;
+          const key = `${ev.team.id}-${ev.player.name}-${ev.time.elapsed}`;
+          if (!seenDismissals.has(key)) {
+            seenDismissals.add(key);
+            if (isHome) homeReds++; else awayReds++;
+          }
         } else if (ev.detail === "Yellow Card") {
           if (isHome) homeYellows++; else awayYellows++;
         }

@@ -108,16 +108,23 @@ export async function GET() {
 
     const stage = parseRound(fixture.league.round) as MatchResult["stage"];
 
-    // Tally cards
+    // Tally cards — deduplicate dismissals by player+team+minute.
+    // API-Football fires BOTH "Second Yellow Card" AND "Red Card" events
+    // for the same dismissal, causing a double-count if we naively count both.
     let homeRed = 0, awayRed = 0, homeYellow = 0, awayYellow = 0;
+    const seenDismissals = new Set<string>();
     const events = eventsByFixture[idx];
     if (events) {
       for (const ev of events) {
         const isHome = ev.team.id === fixture.teams.home.id;
         if (ev.type === "Card") {
           if (ev.detail === "Red Card" || ev.detail === "Second Yellow Card") {
-            if (isHome) homeRed++;
-            else awayRed++;
+            const key = `${ev.team.id}-${ev.player.name}-${ev.time.elapsed}`;
+            if (!seenDismissals.has(key)) {
+              seenDismissals.add(key);
+              if (isHome) homeRed++;
+              else awayRed++;
+            }
           } else if (ev.detail === "Yellow Card") {
             if (isHome) homeYellow++;
             else awayYellow++;
