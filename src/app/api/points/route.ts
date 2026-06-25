@@ -135,5 +135,6 @@ export async function GET() {
     draftCompleted: true,
     hasLiveGames,
     lastUpdated: new Date().toISOString(),
+    _debug: { fixturesTotal: fixtures.length, countable: countable.length },
   });
 }
