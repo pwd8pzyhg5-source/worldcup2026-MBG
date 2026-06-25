@@ -1,51 +1,76 @@
+import { Redis } from "@upstash/redis";
+
 const BASE_URL = "https://v3.football.api-sports.io";
 const LEAGUE_ID = 1;
 const SEASON = 2026;
 
-// Shared persistent fallback — used ONLY when the live API fetch errors
-// (rate limit, network failure, API error payload). NOT the primary cache.
-// Primary cache is Next.js Data Cache via `next: { revalidate, tags }`.
-//
-// Cache tags let us call revalidateTag("fixtures") from an admin endpoint
-// to force-bust all fixture caches at once when data looks stale.
-const lastGood: Record<string, unknown> = {};
+// Redis is our shared cache across all serverless instances.
+// This is the reliable fix: Next.js Data Cache (next: { revalidate }) was
+// inconsistent across deployments and between instances, causing different
+// serverless functions to see different snapshots of the data.
+// Redis gives every instance the same view of the world.
+let redis: Redis | null = null;
+function getRedis(): Redis | null {
+  if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) return null;
+  if (!redis) redis = Redis.fromEnv();
+  return redis;
+}
 
-async function apiFetch<T>(
-  path: string,
-  revalidateSeconds: number = 300,
-  tags: string[] = []
-): Promise<T | null> {
+async function apiFetch<T>(path: string, ttlSeconds: number): Promise<T | null> {
   const apiKey = process.env.API_FOOTBALL_KEY;
   if (!apiKey) {
     console.error("API_FOOTBALL_KEY not set");
-    return (lastGood[path] as T) ?? null;
+    return null;
   }
 
+  const cacheKey = `apifootball:${path}`;
+  const r = getRedis();
+
+  // Try Redis cache first — shared across all instances
+  if (r) {
+    try {
+      const cached = await r.get<T>(cacheKey);
+      if (cached !== null && cached !== undefined) return cached;
+    } catch (e) {
+      console.error("Redis read failed:", e);
+    }
+  }
+
+  // Cache miss — fetch fresh from API-Football
   try {
     const res = await fetch(`${BASE_URL}${path}`, {
       headers: { "x-apisports-key": apiKey },
-      next: { revalidate: revalidateSeconds, tags },
+      cache: "no-store",
     });
 
     if (!res.ok) {
-      console.error(`API-Football error: ${res.status} ${path}`);
-      return (lastGood[path] as T) ?? null;
+      console.error(`API-Football ${res.status} for ${path}`);
+      return null;
     }
 
     const json = await res.json();
-
     const errs = json.errors;
     const hasErrors = errs && (Array.isArray(errs) ? errs.length > 0 : Object.keys(errs).length > 0);
     if (hasErrors) {
       console.error("API-Football error payload:", path, errs);
-      return (lastGood[path] as T) ?? null;
+      return null;
     }
 
-    lastGood[path] = json.response;
-    return json.response as T;
+    const data = json.response as T;
+
+    // Store in Redis with TTL so all future instances get this until it expires
+    if (r) {
+      try {
+        await r.set(cacheKey, data, { ex: ttlSeconds });
+      } catch (e) {
+        console.error("Redis write failed:", e);
+      }
+    }
+
+    return data;
   } catch (err) {
     console.error("API-Football fetch failed:", err);
-    return (lastGood[path] as T) ?? null;
+    return null;
   }
 }
 
@@ -103,65 +128,31 @@ export interface APITopScorer {
   }>;
 }
 
-// All WC 2026 fixtures — used for upcoming fixtures display (NS status).
-// 300s TTL: short enough that newly-scheduled or postponed matches appear quickly.
-// Tagged "fixtures" so we can force-bust from /api/admin/refresh.
+// All WC 2026 fixtures — 2 minute cache.
+// Short enough that a newly-finished match appears quickly;
+// long enough to stay comfortably under the 7,500 req/day API cap.
 export const getFixtures = () =>
-  apiFetch<APIFixture[]>(
-    `/fixtures?league=${LEAGUE_ID}&season=${SEASON}`,
-    300,
-    ["fixtures"]
-  );
+  apiFetch<APIFixture[]>(`/fixtures?league=${LEAGUE_ID}&season=${SEASON}`, 120);
 
-// Currently live fixtures — lowest possible TTL for real-time scores.
-// Tagged "fixtures" to be included in manual refresh.
+// Currently live fixtures — 60 second cache for near-real-time scores.
 export const getLiveFixtures = () =>
-  apiFetch<APIFixture[]>(
-    `/fixtures?league=${LEAGUE_ID}&live=all`,
-    60,
-    ["fixtures"]
-  );
+  apiFetch<APIFixture[]>(`/fixtures?league=${LEAGUE_ID}&live=all`, 60);
 
-// Finished fixtures only — these have stable final scores.
-// Much longer cache than getFixtures: a finished score never changes.
-// We keep 300s as a safety margin in case API corrections trickle in.
-// Tagged "fixtures-finished" — busted separately since it's slower to refresh.
-export const getFinishedFixtures = () =>
-  apiFetch<APIFixture[]>(
-    `/fixtures?league=${LEAGUE_ID}&season=${SEASON}&status=FT-AET-PEN-WO-AWD`,
-    300,
-    ["fixtures", "fixtures-finished"]
-  );
-
-// Per-fixture event stream — cards only relevant data here; goals come from
-// the fixture score itself. TTL is passed by caller based on match state.
+// Per-fixture event stream (cards). TTL is passed by caller:
+//   - in-progress match: 60s (fast refresh)
+//   - just finished (<2.5hrs): 45min (captures late VAR card confirmations)
+//   - long finished (>2.5hrs): 6hr (stable, rarely changes)
 export const getFixtureEvents = (fixtureId: number, ttlSeconds: number) =>
-  apiFetch<APIEvent[]>(
-    `/fixtures/events?fixture=${fixtureId}`,
-    ttlSeconds,
-    ["fixtures", `fixture-events-${fixtureId}`]
-  );
+  apiFetch<APIEvent[]>(`/fixtures/events?fixture=${fixtureId}`, ttlSeconds);
 
 export const getStandings = () =>
-  apiFetch<APIStandingEntry[][]>(
-    `/standings?league=${LEAGUE_ID}&season=${SEASON}`,
-    300,
-    ["fixtures"]
-  );
+  apiFetch<APIStandingEntry[][]>(`/standings?league=${LEAGUE_ID}&season=${SEASON}`, 300);
 
 export const getTopScorers = () =>
-  apiFetch<APITopScorer[]>(
-    `/players/topscorers?league=${LEAGUE_ID}&season=${SEASON}`,
-    60 * 60,
-    ["topscorers"]
-  );
+  apiFetch<APITopScorer[]>(`/players/topscorers?league=${LEAGUE_ID}&season=${SEASON}`, 3600);
 
 export const getTopAssists = () =>
-  apiFetch<APITopScorer[]>(
-    `/players/topassists?league=${LEAGUE_ID}&season=${SEASON}`,
-    60 * 60,
-    ["topscorers"]
-  );
+  apiFetch<APITopScorer[]>(`/players/topassists?league=${LEAGUE_ID}&season=${SEASON}`, 3600);
 
 export function parseRound(round: string): string {
   if (round.includes("Group")) return "Group Stage";

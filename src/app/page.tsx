@@ -498,20 +498,9 @@ export default function Home() {
         </div>
 
         {lastUpdated && (
-          <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 10, marginBottom: 20 }}>
-            <p style={{ color: "var(--muted)", fontSize: 11, margin: 0 }}>
-              Updated: {new Date(lastUpdated).toLocaleTimeString()}
-            </p>
-            <button
-              onClick={async () => {
-                await fetch("/api/admin/refresh", { method: "POST" });
-                await refreshLive();
-              }}
-              style={{ background: "none", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 4, color: "var(--muted)", fontSize: 11, padding: "2px 8px", cursor: "pointer" }}
-            >
-              ↺ Force Refresh
-            </button>
-          </div>
+          <p style={{ color: "var(--muted)", fontSize: 11, marginBottom: 20, textAlign: "right" }}>
+            Updated: {new Date(lastUpdated).toLocaleTimeString()}
+          </p>
         )}
 
         {/* Points reference */}
