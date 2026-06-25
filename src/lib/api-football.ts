@@ -149,8 +149,10 @@ export const getLiveFixtures = () =>
 //   - in-progress match: 60s (fast refresh)
 //   - just finished (<2.5hrs): 45min (captures late VAR card confirmations)
 //   - long finished (>2.5hrs): 6hr (stable, rarely changes)
+// Event TTL caps at 30 minutes for old matches to limit stale card data.
+// In-progress matches use caller-supplied TTL (60s).
 export const getFixtureEvents = (fixtureId: number, ttlSeconds: number) =>
-  apiFetch<APIEvent[]>(`/fixtures/events?fixture=${fixtureId}`, ttlSeconds);
+  apiFetch<APIEvent[]>(`/fixtures/events?fixture=${fixtureId}`, Math.min(ttlSeconds, 1800));
 
 export const getStandings = () =>
   apiFetch<APIStandingEntry[][]>(`/standings?league=${LEAGUE_ID}&season=${SEASON}`, 300);
