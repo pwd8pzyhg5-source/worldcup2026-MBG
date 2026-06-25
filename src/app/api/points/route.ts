@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 import { readDraft } from "@/lib/draft";
-import { getFixtures, getLiveFixtures, getFixtureEvents, parseRound } from "@/lib/api-football";
+import { getFinishedFixtures, getLiveFixtures, getFixtureEvents, parseRound } from "@/lib/api-football";
 import { calculateStandings, MatchResult } from "@/lib/points";
 import { TEAM_BY_API_ID } from "../../../../data/teams";
 
-const FINISHED_STATUSES = ["FT", "AET", "PEN", "WO", "AWD"];
 const IN_PROGRESS_STATUSES = ["1H", "HT", "2H", "ET", "P", "BT", "SUSP", "INT", "LIVE"];
 
 export async function GET() {
@@ -17,7 +16,9 @@ export async function GET() {
     return NextResponse.json({ standings, draftCompleted: false });
   }
 
-  const [fixtures, liveFixtures] = await Promise.all([getFixtures(), getLiveFixtures()]);
+  // Use the status-filtered endpoint for finished fixtures — it returns correct
+  // final scores more reliably than the all-fixtures endpoint which can lag.
+  const [fixtures, liveFixtures] = await Promise.all([getFinishedFixtures(), getLiveFixtures()]);
 
   if (!fixtures) {
     return NextResponse.json({ error: "API unavailable", standings: [], draftCompleted: true });
@@ -32,14 +33,21 @@ export async function GET() {
 
   const hasLiveGames = (liveFixtures?.length ?? 0) > 0;
 
-  const countable = fixtures
-    .map((f) => liveById[f.fixture.id] ?? f)
-    .filter((f) => {
-      const s = f.fixture.status.short;
-      return (FINISHED_STATUSES.includes(s) || IN_PROGRESS_STATUSES.includes(s))
-        && !!TEAM_BY_API_ID[f.teams.home.id]
-        && !!TEAM_BY_API_ID[f.teams.away.id];
-    });
+  // Merge: finished fixtures are the base; live overrides by ID (in-progress scores)
+  // Also include any live fixtures not yet in the finished list
+  const finishedIds = new Set(fixtures.map((f) => f.fixture.id));
+  const liveOnly = (liveFixtures ?? []).filter((f) =>
+    !finishedIds.has(f.fixture.id) &&
+    !!TEAM_BY_API_ID[f.teams.home.id] &&
+    !!TEAM_BY_API_ID[f.teams.away.id]
+  );
+
+  const countable = [
+    ...fixtures.filter((f) =>
+      !!TEAM_BY_API_ID[f.teams.home.id] && !!TEAM_BY_API_ID[f.teams.away.id]
+    ).map((f) => liveById[f.fixture.id] ?? f),
+    ...liveOnly,
+  ];
 
   function eventsTtlFor(fixture: (typeof countable)[number]): number {
     const s = fixture.fixture.status.short;

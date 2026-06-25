@@ -128,11 +128,18 @@ export interface APITopScorer {
   }>;
 }
 
-// All WC 2026 fixtures — 2 minute cache.
-// Short enough that a newly-finished match appears quickly;
-// long enough to stay comfortably under the 7,500 req/day API cap.
+// All WC 2026 fixtures — 2 minute cache (used for standings display).
 export const getFixtures = () =>
   apiFetch<APIFixture[]>(`/fixtures?league=${LEAGUE_ID}&season=${SEASON}`, 120);
+
+// Finished fixtures only — status-filtered endpoint is more reliable for
+// final scores than the all-fixtures endpoint which can lag on status updates.
+// 2 minute Redis cache (replaces the old Next.js Data Cache that was unreliable).
+export const getFinishedFixtures = () =>
+  apiFetch<APIFixture[]>(
+    `/fixtures?league=${LEAGUE_ID}&season=${SEASON}&status=FT-AET-PEN-WO-AWD`,
+    120
+  );
 
 // Currently live fixtures — 60 second cache for near-real-time scores.
 export const getLiveFixtures = () =>
