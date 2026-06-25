@@ -143,6 +143,14 @@ export async function GET() {
     draftCompleted: true,
     hasLiveGames,
     lastUpdated: new Date().toISOString(),
-    _debug: { fixturesTotal: fixtures.length, countable: countable.length },
+    _debug: {
+      fixturesTotal: fixtures.length,
+      countable: countable.length,
+      perParticipant: standings.map(p => ({
+        name: p.name,
+        total: p.totalPoints,
+        teams: p.teamPoints.map(t => ({ id: t.teamId, pts: t.total, breakdown: t.breakdown }))
+      }))
+    },
   });
 }
