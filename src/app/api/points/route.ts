@@ -138,18 +138,10 @@ export async function GET() {
 
   const standings = calculateStandings(draft.participants, results, advancementMap);
 
-  const rickTeams = standings.find(p => p.name === "Dr. Rick")?.teamPoints.map(t => ({
-    id: t.teamId, pts: t.total,
-    wins: t.breakdown.groupWins, draws: t.breakdown.groupDraws,
-    goals: t.breakdown.goalsScored, cs: t.breakdown.cleanSheets,
-    reds: t.breakdown.redCardPenalty, yels: t.breakdown.yellowCardPenalty,
-  }));
-
   return NextResponse.json({
     standings,
     draftCompleted: true,
     hasLiveGames,
     lastUpdated: new Date().toISOString(),
-    _debug: { countable: countable.length, deployId: process.env.VERCEL_DEPLOYMENT_ID?.slice(0,8) ?? "none", rickTeams },
   });
 }
