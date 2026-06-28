@@ -32,16 +32,15 @@ function sleep(ms: number) {
 export async function GET() {
   const redis = Redis.fromEnv();
 
+  // Fetch fixture list just to get IDs — do NOT cache it here.
+  // The fixture list has a 2-minute TTL managed by apiFetch; warm-cache
+  // only pre-populates the per-fixture event data which is slower to refresh.
   const fixtures = await rawFetch(
     `/fixtures?league=${LEAGUE_ID}&season=${SEASON}&status=FT-AET-PEN-WO-AWD`
   );
   if (!fixtures || !Array.isArray(fixtures)) {
     return NextResponse.json({ error: "Could not fetch fixtures" }, { status: 500 });
   }
-
-  // Also cache the fixture list itself
-  const fixtureKey = `apifootball:${TODAY}:/fixtures?league=${LEAGUE_ID}&season=${SEASON}&status=FT-AET-PEN-WO-AWD`;
-  await redis.set(fixtureKey, fixtures, { ex: 23 * 3600 });
 
   const results: { fixtureId: number; events: number | "error" }[] = [];
 
