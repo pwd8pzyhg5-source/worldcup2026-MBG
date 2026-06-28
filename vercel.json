@@ -1,7 +1,7 @@
 {
   "crons": [
     {
-      "path": "/api/admin/flush-cache",
+      "path": "/api/admin/warm-cache",
       "schedule": "0 6 * * *"
     }
   ]
