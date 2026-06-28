@@ -4,7 +4,7 @@ import { Redis } from "@upstash/redis";
 const BASE = "https://v3.football.api-sports.io";
 const LEAGUE_ID = 1;
 const SEASON = 2026;
-// Must match the TODAY prefix logic in api-football.ts
+// Must match the today() logic in api-football.ts (computed at request time)
 const TODAY = new Date().toISOString().slice(0, 10);
 
 async function rawFetch(path: string) {
