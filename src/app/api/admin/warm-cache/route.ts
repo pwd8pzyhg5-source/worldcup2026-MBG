@@ -4,8 +4,8 @@ import { Redis } from "@upstash/redis";
 const BASE = "https://v3.football.api-sports.io";
 const LEAGUE_ID = 1;
 const SEASON = 2026;
-// Must match the DEPLOY_ID logic in api-football.ts
-const DEPLOY_ID = (process.env.VERCEL_DEPLOYMENT_ID ?? "local").slice(0, 12);
+// Must match the TODAY prefix logic in api-football.ts
+const TODAY = new Date().toISOString().slice(0, 10);
 
 async function rawFetch(path: string) {
   const apiKey = process.env.API_FOOTBALL_KEY;
@@ -40,7 +40,7 @@ export async function GET() {
   }
 
   // Also cache the fixture list itself
-  const fixtureKey = `apifootball:${DEPLOY_ID}:/fixtures?league=${LEAGUE_ID}&season=${SEASON}&status=FT-AET-PEN-WO-AWD`;
+  const fixtureKey = `apifootball:${TODAY}:/fixtures?league=${LEAGUE_ID}&season=${SEASON}&status=FT-AET-PEN-WO-AWD`;
   await redis.set(fixtureKey, fixtures, { ex: 23 * 3600 });
 
   const results: { fixtureId: number; events: number | "error" }[] = [];
@@ -48,7 +48,7 @@ export async function GET() {
   for (const f of fixtures) {
     const fixtureId = f.fixture.id as number;
     const path = `/fixtures/events?fixture=${fixtureId}`;
-    const cacheKey = `apifootball:${DEPLOY_ID}:${path}`;
+    const cacheKey = `apifootball:${TODAY}:${path}`;
 
     const events = await rawFetch(path);
     if (events !== null) {

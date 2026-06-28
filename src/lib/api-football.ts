@@ -5,10 +5,10 @@ const LEAGUE_ID = 1;
 const SEASON = 2026;
 
 // Redis is our shared cache across all serverless instances.
-// Cache keys are scoped to the current Vercel deployment ID so that each
-// new deploy starts with a clean cache — no stale event data from prior builds.
-// Old keys expire naturally via their individual TTLs.
-const DEPLOY_ID = (process.env.VERCEL_DEPLOYMENT_ID ?? "local").slice(0, 12);
+// Cache keys use today's UTC date so all deployments on the same day
+// share the same pre-warmed cache. The daily warm-cache cron (06:00 UTC)
+// fetches events sequentially to avoid rate-limit issues from parallel bursts.
+const TODAY = new Date().toISOString().slice(0, 10); // "2026-06-28"
 let redis: Redis | null = null;
 function getRedis(): Redis | null {
   if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) return null;
@@ -23,7 +23,7 @@ async function apiFetch<T>(path: string, ttlSeconds: number): Promise<T | null> 
     return null;
   }
 
-  const cacheKey = `apifootball:${DEPLOY_ID}:${path}`;
+  const cacheKey = `apifootball:${TODAY}:${path}`;
   const r = getRedis();
 
   // Try Redis cache first — shared across all instances
