@@ -6,7 +6,7 @@ export async function POST() {
   let cursor = 0;
   let deleted = 0;
   do {
-    const [next, keys] = await redis.scan(cursor, { match: "apifootball:*", count: 100 });
+    const [next, keys] = await redis.scan(cursor, { match: "apifootball:*:*", count: 100 });
     cursor = Number(next);
     if (keys.length > 0) {
       await redis.del(...keys);
