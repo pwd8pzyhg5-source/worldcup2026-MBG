@@ -12,9 +12,18 @@ const NAME_TO_SLUG: Record<string, string> = {
   "Argentina": "argentina", "Morocco": "morocco", "Canada": "canada", "Ecuador": "ecuador",
   "Ghana": "ghana", "Bosnia and Herzegovina": "bosnia", "South Africa": "south-africa", "New Zealand": "new-zealand",
   "France": "france", "Belgium": "belgium", "Colombia": "colombia", "Egypt": "egypt",
-  "Korea Republic": "korea-republic", "Czech Republic": "czechia", "Jordan": "jordan", "Iraq": "iraq",
-  "Portugal": "portugal", "Uruguay": "uruguay", "Switzerland": "switzerland", "Turkey": "turkey",
-  "Scotland": "scotland", "DR Congo": "congo-dr", "Saudi Arabia": "saudi-arabia", "Haiti": "haiti",
+  "Korea Republic": "korea-republic", "South Korea": "korea-republic",
+  "Czech Republic": "czechia", "Czechia": "czechia",
+  "Jordan": "jordan", "Iraq": "iraq",
+  "Portugal": "portugal", "Uruguay": "uruguay", "Switzerland": "switzerland",
+  "Turkey": "turkey", "Türkiye": "turkey",
+  "Scotland": "scotland",
+  "DR Congo": "congo-dr", "Congo DR": "congo-dr",
+  "Saudi Arabia": "saudi-arabia", "Haiti": "haiti",
+  "Bosnia & Herzegovina": "bosnia",
+  "USA": "usa",
+  "Cape Verde Islands": "cabo-verde",
+  "Iran": "iran",
 };
 
 const TEAM_BY_SLUG: Record<string, string> = {
