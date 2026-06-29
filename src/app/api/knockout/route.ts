@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getFixtures, parseRound } from "@/lib/api-football";
 import { TEAM_BY_API_ID } from "../../../../data/teams";
-import { R16_PAIRINGS, R32_BRACKET_ORDER, type Slot } from "@/lib/bracket";
+import { R16_PAIRINGS, R32_BRACKET_ORDER, MANUAL_RESULTS, type Slot } from "@/lib/bracket";
 
 export interface KnockoutFixture {
   fixtureId: number;
@@ -80,16 +80,19 @@ export async function GET() {
   const r32 = rounds["Round of 32"] || [];
 
   function findR32Winner(teamA: string, teamB: string): string | null {
+    // API result takes precedence when the match is confirmed finished
     for (const m of r32) {
       const ids = new Set([m.homeTeamId, m.awayTeamId]);
       if (!ids.has(teamA) || !ids.has(teamB)) continue;
-      if (!FINISHED.has(m.status)) return null;
+      if (!FINISHED.has(m.status)) break; // match exists but not finished yet
       const hg = m.homeGoals ?? 0;
       const ag = m.awayGoals ?? 0;
       if (hg === ag) return null;
       return hg > ag ? m.homeTeamId : m.awayTeamId;
     }
-    return null;
+    // Fall back to manual override when API hasn't updated yet
+    const key = [teamA, teamB].sort().join("|");
+    return MANUAL_RESULTS[key] ?? null;
   }
 
   function resolveSlot(slot: Slot): string | null {

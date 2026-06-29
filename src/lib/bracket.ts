@@ -35,6 +35,13 @@ export const R32_BRACKET_ORDER: [string, string][] = [
   ["colombia", "ghana"],       // 15 → R16 slot 7 (bottom)
 ];
 
+// Manual result overrides — used when the API hasn't updated yet.
+// Key: sorted "teamA|teamB", value: winner slug.
+// Safe to leave in place once the API catches up (API result takes precedence when FINISHED).
+export const MANUAL_RESULTS: Record<string, string> = {
+  "germany|paraguay": "paraguay", // Paraguay won on penalties (Jun 29)
+};
+
 // R32 winner → R16 pairings (first 4 = left bracket, last 4 = right bracket).
 export const R16_PAIRINGS: BracketPairing[] = [
   // LEFT BRACKET
