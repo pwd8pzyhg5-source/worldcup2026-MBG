@@ -1,16 +1,12 @@
 import { NextResponse } from "next/server";
-import { getFixtures, getStandings, parseRound } from "@/lib/api-football";
+import { getFixtures, parseRound } from "@/lib/api-football";
 import { TEAM_BY_API_ID } from "../../../../data/teams";
 
 const GROUP_STAGE = "Group Stage";
 const FINISHED = new Set(["FT", "AET", "PEN", "WO", "AWD"]);
 
-// Returns team slugs (our IDs) for teams that are out of the tournament.
-// Group stage: ranked 3rd or 4th after 3 games and not appearing in any R32+ fixture.
-// Knockout: appeared in a finished knockout match and lost.
 export async function GET() {
-  const [fixtures, standingsGroups] = await Promise.all([getFixtures(), getStandings()]);
-
+  const fixtures = await getFixtures();
   if (!fixtures) return NextResponse.json({ eliminated: [] });
 
   const eliminated = new Set<string>();
@@ -25,19 +21,23 @@ export async function GET() {
     if (a) inKnockout.add(a.id);
   }
 
-  // Group stage eliminations: rank 3+ with 3 games played, not in any knockout fixture
-  if (standingsGroups) {
-    for (const group of standingsGroups) {
-      for (const entry of group) {
-        if (entry.rank >= 3 && entry.all.played >= 3) {
-          const team = TEAM_BY_API_ID[entry.team.id];
-          if (team && !inKnockout.has(team.id)) eliminated.add(team.id);
-        }
-      }
-    }
+  // Count finished group stage games per team
+  const groupGamesPlayed: Record<string, number> = {};
+  for (const f of fixtures) {
+    if (parseRound(f.league.round) !== GROUP_STAGE) continue;
+    if (!FINISHED.has(f.fixture.status.short)) continue;
+    const h = TEAM_BY_API_ID[f.teams.home.id];
+    const a = TEAM_BY_API_ID[f.teams.away.id];
+    if (h) groupGamesPlayed[h.id] = (groupGamesPlayed[h.id] || 0) + 1;
+    if (a) groupGamesPlayed[a.id] = (groupGamesPlayed[a.id] || 0) + 1;
   }
 
-  // Knockout eliminations: team that lost a finished knockout match
+  // Any team that played all 3 group games and didn't make any knockout fixture = eliminated
+  for (const [teamId, played] of Object.entries(groupGamesPlayed)) {
+    if (played >= 3 && !inKnockout.has(teamId)) eliminated.add(teamId);
+  }
+
+  // Knockout eliminations: loser of any finished knockout match
   for (const f of fixtures) {
     if (parseRound(f.league.round) === GROUP_STAGE) continue;
     if (!FINISHED.has(f.fixture.status.short)) continue;
