@@ -34,11 +34,17 @@ function DraftInner() {
   const [picking, setPicking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<View>("board");
+  const [eliminatedTeams, setEliminatedTeams] = useState<Set<string>>(new Set());
 
   const loadDraft = useCallback(async () => {
-    const res = await fetch("/api/draft");
-    const data = await res.json();
+    const [draftRes, eliminatedRes] = await Promise.all([
+      fetch("/api/draft"),
+      fetch("/api/eliminated"),
+    ]);
+    const data = await draftRes.json();
     setDraft(data);
+    const elimData = await eliminatedRes.json();
+    setEliminatedTeams(new Set(elimData.eliminated || []));
     setLoading(false);
   }, []);
 
@@ -235,14 +241,14 @@ function DraftInner() {
                             </td>
                           </tr>
                         )}
-                        <tr key={pick.pickNumber} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                        <tr key={pick.pickNumber} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)", opacity: eliminatedTeams.has(pick.teamId) ? 0.4 : 1, filter: eliminatedTeams.has(pick.teamId) ? "grayscale(0.8)" : "none" }}>
                           <td style={{ padding: "10px 14px", width: 52 }}>
                             <span className="font-display" style={{ fontSize: 18, color }}>{pick.pickNumber}</span>
                           </td>
                           <td style={{ padding: "10px 14px" }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                               {team && <Flag code={team.code} size={24} />}
-                              <span className="font-condensed" style={{ color: "var(--white)", fontWeight: 700, fontSize: 15 }}>{team?.name || pick.teamId}</span>
+                              <span className="font-condensed" style={{ color: eliminatedTeams.has(pick.teamId) ? "var(--muted)" : "var(--white)", fontWeight: 700, fontSize: 15 }}>{team?.name || pick.teamId}</span>
                             </div>
                           </td>
                           <td style={{ padding: "10px 14px" }}>
@@ -276,10 +282,11 @@ function DraftInner() {
                       {picksForParticipant.map((pick) => {
                         const team = TEAM_BY_ID[pick.teamId];
                         if (!team) return null;
+                        const out = eliminatedTeams.has(pick.teamId);
                         return (
-                          <div key={pick.teamId} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 16px", borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
+                          <div key={pick.teamId} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 16px", borderBottom: "1px solid rgba(255,255,255,0.03)", opacity: out ? 0.4 : 1, filter: out ? "grayscale(0.8)" : "none", transition: "opacity 0.2s" }}>
                             <Flag code={team.code} size={24} />
-                            <span className="font-condensed" style={{ color: "var(--white)", fontWeight: 600, fontSize: 15, flex: 1 }}>{team.name}</span>
+                            <span className="font-condensed" style={{ color: out ? "var(--muted)" : "var(--white)", fontWeight: 600, fontSize: 15, flex: 1 }}>{team.name}</span>
                             <span style={{ fontSize: 11, color: "var(--muted)" }}>Group {team.group}</span>
                             <span style={{ fontSize: 11, color: "var(--muted)", whiteSpace: "nowrap" }}>
                               {FIFA_RANKINGS_BY_ID[pick.teamId] ? `FIFA #${FIFA_RANKINGS_BY_ID[pick.teamId]}` : "NR"}

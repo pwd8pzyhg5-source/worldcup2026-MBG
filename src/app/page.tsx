@@ -49,6 +49,7 @@ export default function Home() {
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [expandedRoster, setExpandedRoster] = useState<string | null>(null);
+  const [eliminatedTeams, setEliminatedTeams] = useState<Set<string>>(new Set());
   const [apiIdOwner, setApiIdOwner] = useState<Record<number, string>>({});
   const [upcomingFixtures, setUpcomingFixtures] = useState<LiveFixture[]>([]);
   const [votes, setVotes] = useState<Record<number, Record<string, VoteChoice>>>({});
@@ -102,11 +103,12 @@ export default function Home() {
 
   useEffect(() => {
     async function load() {
-      const [pointsRes, liveRes, draftRes, upcomingRes] = await Promise.all([
+      const [pointsRes, liveRes, draftRes, upcomingRes, eliminatedRes] = await Promise.all([
         fetch("/api/points"),
         fetch("/api/fixtures?live=true"),
         fetch("/api/draft"),
         fetch("/api/fixtures?upcoming=true"),
+        fetch("/api/eliminated"),
       ]);
       const pointsData = await pointsRes.json();
       setStandings(pointsData.standings || []);
@@ -127,6 +129,8 @@ export default function Home() {
       const upcomingData = await upcomingRes.json();
       const upcoming: LiveFixture[] = upcomingData.fixtures || [];
       setUpcomingFixtures(upcoming);
+      const eliminatedData = await eliminatedRes.json();
+      setEliminatedTeams(new Set(eliminatedData.eliminated || []));
       fetchVotes(upcoming.map((f) => f.fixture.id));
       setLoading(false);
     }
@@ -458,7 +462,9 @@ export default function Home() {
                           <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
                             {p.teams.map((tid) => {
                               const team = TEAM_BY_ID[tid];
-                              return team ? <Flag key={tid} code={team.code} size={18} title={team.name} /> : null;
+                              if (!team) return null;
+                              const out = eliminatedTeams.has(tid);
+                              return <span key={tid} style={{ opacity: out ? 0.3 : 1, filter: out ? "grayscale(1)" : "none", transition: "opacity 0.2s" }}><Flag code={team.code} size={18} title={team.name} /></span>;
                             })}
                           </div>
                         </td>
@@ -475,12 +481,13 @@ export default function Home() {
                                 const team = TEAM_BY_ID[tid];
                                 if (!team) return null;
                                 const tp = p.teamPoints.find((x) => x.teamId === tid);
+                                const out = eliminatedTeams.has(tid);
                                 return (
-                                  <div key={tid} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 8px", background: "rgba(255,255,255,0.03)", borderRadius: 6, border: `1px solid ${color}33` }}>
+                                  <div key={tid} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 8px", background: "rgba(255,255,255,0.03)", borderRadius: 6, border: `1px solid ${color}33`, opacity: out ? 0.4 : 1, filter: out ? "grayscale(0.8)" : "none", transition: "opacity 0.2s" }}>
                                     <Flag code={team.code} size={20} title={team.name} />
                                     <div style={{ minWidth: 0 }}>
-                                      <div className="font-condensed" style={{ color: "var(--white)", fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{team.name}</div>
-                                      <div style={{ color: "var(--muted)", fontSize: 11 }}>Grp {team.group} · <span style={{ color, fontWeight: 700 }}>{tp?.total ?? 0} pts</span></div>
+                                      <div className="font-condensed" style={{ color: out ? "var(--muted)" : "var(--white)", fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{team.name}</div>
+                                      <div style={{ color: "var(--muted)", fontSize: 11 }}>Grp {team.group} · <span style={{ color: out ? "var(--muted)" : color, fontWeight: 700 }}>{tp?.total ?? 0} pts</span></div>
                                     </div>
                                   </div>
                                 );
