@@ -84,13 +84,16 @@ export async function GET() {
     for (const m of r32) {
       const ids = new Set([m.homeTeamId, m.awayTeamId]);
       if (!ids.has(teamA) || !ids.has(teamB)) continue;
-      if (!FINISHED.has(m.status)) break; // match exists but not finished yet
+      if (!FINISHED.has(m.status)) break; // match exists but not finished — fall through
       const hg = m.homeGoals ?? 0;
       const ag = m.awayGoals ?? 0;
-      if (hg === ag) return null;
-      return hg > ag ? m.homeTeamId : m.awayTeamId;
+      if (hg > ag) return m.homeTeamId;
+      if (ag > hg) return m.awayTeamId;
+      // Goals level after 90/120 min — decided by penalties. API may still be updating
+      // status to "PEN". Fall through to manual override to get the correct winner.
+      break;
     }
-    // Fall back to manual override when API hasn't updated yet
+    // Manual override: covers (a) API not yet updated, (b) penalty result not yet reflected
     const key = [teamA, teamB].sort().join("|");
     return MANUAL_RESULTS[key] ?? null;
   }
