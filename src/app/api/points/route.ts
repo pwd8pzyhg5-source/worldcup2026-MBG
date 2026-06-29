@@ -3,6 +3,7 @@ import { readDraft } from "@/lib/draft";
 import { getFinishedFixtures, getLiveFixtures, getFixtureEvents, parseRound } from "@/lib/api-football";
 import { calculateStandings, MatchResult } from "@/lib/points";
 import { TEAM_BY_API_ID } from "../../../../data/teams";
+import { MANUAL_ADVANCEMENTS } from "@/lib/bracket";
 
 const IN_PROGRESS_STATUSES = ["1H", "HT", "2H", "ET", "P", "BT", "SUSP", "INT", "LIVE"];
 
@@ -132,6 +133,18 @@ export async function GET() {
             advancementMap[loser].push("Runner-up");
           }
         }
+      }
+    }
+  }
+
+  // Merge manual advancements for results the API hasn't confirmed yet.
+  // If the API already has the result, the team is already in advancementMap — merging
+  // duplicates is harmless because the points calc uses .includes() not count.
+  for (const [teamId, stages] of Object.entries(MANUAL_ADVANCEMENTS)) {
+    if (!advancementMap[teamId]) advancementMap[teamId] = [];
+    for (const stage of stages) {
+      if (!advancementMap[teamId].includes(stage)) {
+        advancementMap[teamId].push(stage);
       }
     }
   }

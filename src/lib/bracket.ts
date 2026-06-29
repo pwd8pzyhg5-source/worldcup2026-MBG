@@ -42,6 +42,12 @@ export const MANUAL_RESULTS: Record<string, string> = {
   "germany|paraguay": "paraguay", // Paraguay won on penalties (Jun 29)
 };
 
+// Manual advancement bonuses for points calculation — merged into advancementMap
+// when the API fixture hasn't been marked finished yet. Remove entries once API confirms.
+export const MANUAL_ADVANCEMENTS: Record<string, string[]> = {
+  "paraguay": ["Round of 32"], // Beat Germany on pens (Jun 29) — API not yet updated
+};
+
 // R32 winner → R16 pairings (first 4 = left bracket, last 4 = right bracket).
 export const R16_PAIRINGS: BracketPairing[] = [
   // LEFT BRACKET
