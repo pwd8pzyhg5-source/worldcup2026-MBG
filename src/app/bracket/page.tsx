@@ -114,24 +114,25 @@ export default function BracketPage() {
 
   useEffect(() => {
     function refresh(initial = false) {
-      const fetches: Promise<Response>[] = [
+      const coreFetches: Promise<Response>[] = [
         fetch("/api/standings"),
         fetch("/api/knockout"),
-        fetch("/api/eliminated"),
+        ...(initial ? [fetch("/api/draft")] : []),
       ];
-      if (initial) {
-        fetches.push(fetch("/api/draft"));
-      }
-      Promise.all(fetches.map((f) => f.then((r) => r.json()))).then((results) => {
-        const [standingsData, knockoutData, eliminatedData, draftData] = results;
+      Promise.all(coreFetches.map((f) => f.then((r) => r.json()))).then((results) => {
+        const [standingsData, knockoutData, draftData] = results;
         setGroupStandings(standingsData.standings || []);
         setLastUpdated(standingsData.lastUpdated);
         setKnockoutRounds(knockoutData.rounds || {});
         setRoundOrder(knockoutData.roundOrder || []);
-        setEliminatedTeams(new Set(eliminatedData.eliminated || []));
         if (draftData) setDraft(draftData);
         if (initial) setLoading(false);
       });
+      // Eliminated is non-blocking — can't stall the main render
+      fetch("/api/eliminated")
+        .then((r) => r.json())
+        .then((d) => setEliminatedTeams(new Set(d.eliminated || [])))
+        .catch(() => {});
     }
     refresh(true);
     const interval = setInterval(() => refresh(false), 10 * 60 * 1000);

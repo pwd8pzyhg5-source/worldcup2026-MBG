@@ -37,15 +37,14 @@ function DraftInner() {
   const [eliminatedTeams, setEliminatedTeams] = useState<Set<string>>(new Set());
 
   const loadDraft = useCallback(async () => {
-    const [draftRes, eliminatedRes] = await Promise.all([
-      fetch("/api/draft"),
-      fetch("/api/eliminated"),
-    ]);
-    const data = await draftRes.json();
+    const res = await fetch("/api/draft");
+    const data = await res.json();
     setDraft(data);
-    const elimData = await eliminatedRes.json();
-    setEliminatedTeams(new Set(elimData.eliminated || []));
     setLoading(false);
+    fetch("/api/eliminated")
+      .then((r) => r.json())
+      .then((d) => setEliminatedTeams(new Set(d.eliminated || [])))
+      .catch(() => {});
   }, []);
 
   useEffect(() => { loadDraft(); }, [loadDraft]);

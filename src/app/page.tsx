@@ -103,12 +103,11 @@ export default function Home() {
 
   useEffect(() => {
     async function load() {
-      const [pointsRes, liveRes, draftRes, upcomingRes, eliminatedRes] = await Promise.all([
+      const [pointsRes, liveRes, draftRes, upcomingRes] = await Promise.all([
         fetch("/api/points"),
         fetch("/api/fixtures?live=true"),
         fetch("/api/draft"),
         fetch("/api/fixtures?upcoming=true"),
-        fetch("/api/eliminated"),
       ]);
       const pointsData = await pointsRes.json();
       setStandings(pointsData.standings || []);
@@ -129,10 +128,13 @@ export default function Home() {
       const upcomingData = await upcomingRes.json();
       const upcoming: LiveFixture[] = upcomingData.fixtures || [];
       setUpcomingFixtures(upcoming);
-      const eliminatedData = await eliminatedRes.json();
-      setEliminatedTeams(new Set(eliminatedData.eliminated || []));
       fetchVotes(upcoming.map((f) => f.fixture.id));
       setLoading(false);
+      // Load eliminated teams separately so it can't block the main render
+      fetch("/api/eliminated")
+        .then((r) => r.json())
+        .then((d) => setEliminatedTeams(new Set(d.eliminated || [])))
+        .catch(() => {});
     }
     load();
     // Poll every 2 min — refreshes both live scores and standings.
