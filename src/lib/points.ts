@@ -107,10 +107,11 @@ export function calculateTeamPoints(
     // Clean sheets
     if (theirGoals === 0) breakdown.cleanSheets += 1;
 
-    // Group stage results
-    if (match.stage === "Group Stage") {
-      if (myGoals > theirGoals) breakdown.groupWins += 1;
-      else if (myGoals === theirGoals) breakdown.groupDraws += 1;
+    // Wins count in all stages; draws only in group stage (knockout resolves via pens)
+    if (match.winnerId === teamId) {
+      breakdown.groupWins += 1;
+    } else if (match.stage === "Group Stage" && match.winnerId === null) {
+      breakdown.groupDraws += 1;
     }
 
     // Upset bonus: team ranked 30+ beats or draws a top-10 team.
