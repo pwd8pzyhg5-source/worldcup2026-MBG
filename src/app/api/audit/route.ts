@@ -30,7 +30,9 @@ const POINTS = {
   redCard: -2, yellowCardPair: -1,
 };
 
-export async function GET() {
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const filterTeam = searchParams.get("team"); // e.g. ?team=paraguay
   const draft = readDraft();
   if (!draft.completed) return NextResponse.json({ error: "Draft not completed" });
 
