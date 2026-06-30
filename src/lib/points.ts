@@ -7,6 +7,8 @@ export interface MatchResult {
   awayTeamId: string;
   homeGoals: number;
   awayGoals: number;
+  // Actual match winner accounting for penalty shootout (null = genuine draw, group stage only)
+  winnerId: string | null;
   status: "NS" | "1H" | "HT" | "2H" | "ET" | "P" | "FT" | "AET" | "PEN";
   stage: "Group Stage" | "Round of 32" | "Round of 16" | "Quarter-finals" | "Semi-finals" | "3rd Place Final" | "Final";
   homeRedCards: number;
@@ -111,11 +113,12 @@ export function calculateTeamPoints(
       else if (myGoals === theirGoals) breakdown.groupDraws += 1;
     }
 
-    // Upset bonus: team ranked 30+ beats or draws a top-10 team
+    // Upset bonus: team ranked 30+ beats or draws a top-10 team.
+    // Uses actual match winner (including penalty shootout) so a pen win counts as upset win.
     const opponentId = isHome ? match.awayTeamId : match.homeTeamId;
     if (isUpsetEligible(teamId) && isTopTen(opponentId)) {
-      if (myGoals > theirGoals) breakdown.upsetWins += 1;
-      else if (myGoals === theirGoals) breakdown.upsetDraws += 1;
+      if (match.winnerId === teamId) breakdown.upsetWins += 1;
+      else if (match.winnerId === null) breakdown.upsetDraws += 1; // genuine draw (group stage)
     }
 
     // Cards

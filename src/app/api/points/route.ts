@@ -95,12 +95,25 @@ export async function GET() {
       }
     }
 
+    // Determine actual winner including penalty shootout
+    const hg = fixture.goals.home ?? 0;
+    const ag = fixture.goals.away ?? 0;
+    let winnerId: string | null = null;
+    if (hg > ag) winnerId = homeTeam.id;
+    else if (ag > hg) winnerId = awayTeam.id;
+    else if (status === "PEN") {
+      const ph = fixture.score.penalty.home ?? 0;
+      const pa = fixture.score.penalty.away ?? 0;
+      winnerId = ph > pa ? homeTeam.id : awayTeam.id;
+    }
+
     results.push({
       fixtureId: fixture.fixture.id,
       homeTeamId: homeTeam.id,
       awayTeamId: awayTeam.id,
-      homeGoals: fixture.goals.home ?? 0,
-      awayGoals: fixture.goals.away ?? 0,
+      homeGoals: hg,
+      awayGoals: ag,
+      winnerId,
       status,
       stage,
       homeRedCards: homeRed,
