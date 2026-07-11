@@ -39,13 +39,13 @@ export const R32_BRACKET_ORDER: [string, string][] = [
 // Key: sorted "teamA|teamB", value: winner slug.
 // Safe to leave in place once the API catches up (API result takes precedence when FINISHED).
 export const MANUAL_RESULTS: Record<string, string> = {
-  "germany|paraguay": "paraguay", // Paraguay won on penalties (Jun 29)
+  // Add entries here when API lags on a result. Remove once API confirms.
 };
 
 // Manual advancement bonuses for points calculation — merged into advancementMap
 // when the API fixture hasn't been marked finished yet. Remove entries once API confirms.
 export const MANUAL_ADVANCEMENTS: Record<string, string[]> = {
-  "paraguay": ["Round of 32"], // Beat Germany on pens (Jun 29) — API not yet updated
+  // Add entries here when API lags on advancement credit. Remove once API confirms.
 };
 
 // R32 winner → R16 pairings (first 4 = left bracket, last 4 = right bracket).

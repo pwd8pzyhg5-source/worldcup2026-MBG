@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getFixtures, parseRound } from "@/lib/api-football";
+import { getFinishedFixtures, parseRound } from "@/lib/api-football";
 import { TEAM_BY_API_ID } from "../../../../data/teams";
 import { MANUAL_RESULTS } from "@/lib/bracket";
 
@@ -7,7 +7,7 @@ const GROUP_STAGE = "Group Stage";
 const FINISHED = new Set(["FT", "AET", "PEN", "WO", "AWD"]);
 
 export async function GET() {
-  const fixtures = await getFixtures();
+  const fixtures = await getFinishedFixtures();
   if (!fixtures) return NextResponse.json({ eliminated: [] });
 
   const eliminated = new Set<string>();
@@ -49,15 +49,20 @@ export async function GET() {
     if (!h || !a) continue;
     if (hg > ag) eliminated.add(a.id);
     else if (ag > hg) eliminated.add(h.id);
+    else if (f.fixture.status.short === "PEN") {
+      const ph = f.score?.penalty?.home ?? 0;
+      const pa = f.score?.penalty?.away ?? 0;
+      if (ph > pa) eliminated.add(a.id);
+      else if (pa > ph) eliminated.add(h.id);
+    }
   }
 
-  // Apply manual overrides for results the API hasn't confirmed yet
+  // Apply manual overrides for results the API hasn't confirmed yet.
+  // Only adds losers — never removes a team that was legitimately eliminated later.
   for (const [key, winner] of Object.entries(MANUAL_RESULTS)) {
     const [teamA, teamB] = key.split("|");
     const loser = winner === teamA ? teamB : teamA;
     eliminated.add(loser);
-    // Winner stays in-tournament (remove from eliminated if mistakenly added)
-    eliminated.delete(winner);
   }
 
   return NextResponse.json(
